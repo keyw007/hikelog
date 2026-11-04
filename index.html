@@ -269,7 +269,7 @@ function renderTrip(){
       <span class="stop-name ${unnamed?'unnamed':''}">${esc(s.name)}${unnamed?'（點此命名）':''}</span>
       <span class="stop-times num">${s.arr!=null?`<div><span class="k">抵</span>${fmtTime(s.arr,c.start)}</div>`:''}${s.dep!=null?`<div><span class="k">離</span>${fmtTime(s.dep,c.start)}</div>`:''}</span>
       ${s.note?`<span class="stop-note">${esc(s.note)}</span>`:''}
-      ${r.rest!=null?`<span class="stop-rest">${r.ongoing?'休息中':'休息'} <span class="num ${r.warn?'warn':''}">${fmtDur(r.rest)}</span>${r.warn?'<span class="warn">時間順序有誤</span>':''}</span>`:''}
+      ${r.rest!=null&&(r.ongoing||r.warn||Math.round(r.rest/60000)!==0)?`<span class="stop-rest">${r.ongoing?'休息中':'休息'} <span class="num ${r.warn?'warn':''}">${fmtDur(r.rest)}</span>${r.warn?'<span class="warn">時間順序有誤</span>':''}</span>`:''}
     </button></li>`;
   });
   $('#app').innerHTML=`

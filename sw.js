@@ -1,6 +1,6 @@
 // 離線快取：App 本身的檔案全部先存起來，山上沒網路也能開。
 // 更新 App 後把 VERSION 改一下，手機下次連網開啟就會換新版。
-const VERSION = 'hikelog-v1';
+const VERSION = 'hikelog-v2';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
