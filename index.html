@@ -20,7 +20,7 @@
   --accent:#d94a14; --accent-ink:#ffffff; --walk:#2c6a4c; --rest:#355a85; --warn:#b42318;
   --sans:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
   --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono",monospace;
-  --r:14px;
+  --r:14px; --fz:1;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0e1311; --surface:#171f1b; --sunk:#111815; --ink:#e4ebe7; --muted:#8f9d96; --line:#283330;
@@ -28,53 +28,62 @@
 :root[data-theme="dark"]{
   --bg:#0e1311; --surface:#171f1b; --sunk:#111815; --ink:#e4ebe7; --muted:#8f9d96; --line:#283330;
   --accent:#ff6a2b; --accent-ink:#1a0d06; --walk:#6cc298; --rest:#8fb2de; --warn:#ff8a7a; color-scheme:dark}
+/* night-vision red: every token is a dim red on black, overriding any theme */
+:root.night,:root.night[data-theme]{
+  --bg:#000; --surface:#0c0000; --sunk:#060000; --ink:#d23030; --muted:#8a2222; --line:#360808;
+  --accent:#6e0e0e; --accent-ink:#ff5c5c; --walk:#e04848; --rest:#9c2e2e; --warn:#ff6a6a; color-scheme:dark}
+:root.large{--fz:1.25}
 
 html,body{min-height:100%}
-body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.45;
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:calc(16px*var(--fz));line-height:1.45;
   -webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
 button,input,textarea,select{font:inherit;color:inherit}
 button{cursor:pointer;border:0;background:none}
+a{color:var(--rest)}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 
 .app{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));
-  padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 220px}
+  padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 240px}
+.app.noaction{padding-block-end:48px}
 
 /* header */
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);
   display:flex;align-items:center;gap:8px;padding-block:10px;min-height:56px}
-.top h1{flex:1;min-width:0;margin:0;font-size:20px;font-weight:700;text-wrap:balance;
+.top h1{flex:1;min-width:0;margin:0;font-size:calc(20px*var(--fz));font-weight:700;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .iconbtn{min-width:48px;height:48px;border-radius:12px;display:grid;place-items:center;font-size:15px;
   color:var(--ink);background:var(--surface);border:1px solid var(--line);padding:0 12px;white-space:nowrap}
-.eyebrow{font-size:12px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.eyebrow{font-size:12px;letter-spacing:.08em;color:var(--muted)}
 
 /* list */
-.newtrip{width:100%;height:64px;border-radius:var(--r);background:var(--ink);color:var(--bg);font-size:18px;font-weight:700;margin-block:6px 18px}
+.newtrip{width:100%;height:64px;border-radius:var(--r);background:var(--ink);color:var(--bg);font-size:calc(18px*var(--fz));font-weight:700;margin-block:6px 18px}
 .trips{list-style:none;margin:0;padding:0;display:grid;gap:10px}
-.trip{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;width:100%;text-align:left;
+.trip{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;width:100%;text-align:left;
   background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;min-height:76px}
-.trip-name{font-weight:700;font-size:17px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trip-name{font-weight:700;font-size:calc(17px*var(--fz));min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .trip-meta{grid-column:1;color:var(--muted);font-size:13px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.trip-dur{grid-row:1/3;grid-column:2;text-align:right;font-size:22px}
+.trip-dur{grid-row:1/3;grid-column:2;text-align:right;font-size:calc(22px*var(--fz))}
 .trip-dur small{display:block;font-family:var(--sans);font-size:11px;color:var(--muted);letter-spacing:.06em}
 .pill{display:inline-block;font-size:12px;padding:2px 8px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
 .pill.live{border-color:var(--accent);color:var(--accent);font-weight:700}
+:root.night .pill.live{color:var(--ink);border-color:var(--ink)}
 .tools{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap}
 .tools .iconbtn{flex:1}
 .empty{color:var(--muted);text-align:center;padding:36px 8px;border:1px dashed var(--line);border-radius:var(--r)}
 
 /* summary */
-.status{display:flex;align-items:center;gap:10px;font-size:15px;margin-block:2px 10px;min-height:28px}
+.status{display:flex;align-items:center;gap:10px;font-size:calc(15px*var(--fz));margin-block:2px 10px;min-height:28px}
 .status .dotlive{width:10px;height:10px;border-radius:50%;background:var(--accent);flex:none;animation:pulse 1.6s infinite}
+:root.night .status .dotlive{background:var(--ink)}
 .status.rest .dotlive{background:var(--rest)}
 .status.done .dotlive{background:var(--muted);animation:none}
 @keyframes pulse{50%{opacity:.35}}
 @media (prefers-reduced-motion:reduce){.status .dotlive{animation:none}}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
-.stat{background:var(--surface);padding:12px 14px}
-.stat b{display:block;font-size:30px;font-weight:600;line-height:1.1}
+.stat{background:var(--surface);padding:12px 14px;min-width:0}
+.stat b{display:block;font-size:calc(30px*var(--fz));font-weight:600;line-height:1.1}
 .stat span{font-size:13px;color:var(--muted)}
 .stat.walk b{color:var(--walk)} .stat.rest b{color:var(--rest)}
 .bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--sunk);margin-top:10px}
@@ -83,68 +92,110 @@ button{cursor:pointer;border:0;background:none}
 /* timeline */
 .tl{list-style:none;margin:20px 0 0;padding:0 0 0 22px;position:relative}
 .tl::before{content:"";position:absolute;left:7px;top:14px;bottom:14px;width:2px;background:var(--line)}
-.stop{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;width:100%;text-align:left;
+.stop{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 12px;width:100%;text-align:left;
   background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-height:64px}
 .stop::before{content:"";position:absolute;left:-21px;top:20px;width:12px;height:12px;border-radius:50%;
   background:var(--surface);border:3px solid var(--walk)}
 .stop.now{border-color:var(--rest)} .stop.now::before{border-color:var(--rest);background:var(--rest)}
 .stop.first::before,.stop.last::before{border-radius:3px}
-.stop-name{font-weight:700;font-size:17px;overflow-wrap:anywhere}
+.stop-name{font-weight:700;font-size:calc(17px*var(--fz));overflow-wrap:anywhere}
 .stop-name.unnamed{color:var(--muted);font-weight:500}
-.stop-note{grid-column:1;font-size:13px;color:var(--muted);overflow-wrap:anywhere}
-.stop-times{grid-row:1/3;grid-column:2;text-align:right;font-size:14px;line-height:1.5}
+.stop-note{grid-column:1;font-size:calc(13px*var(--fz));color:var(--muted);overflow-wrap:anywhere}
+.stop-times{grid-row:1/3;grid-column:2;text-align:right;font-size:calc(14px*var(--fz));line-height:1.5}
 .stop-times .k{font-family:var(--sans);font-size:11px;color:var(--muted);margin-right:4px}
-.stop-rest{grid-column:1/3;display:flex;gap:10px;align-items:center;font-size:13px;color:var(--rest)}
+.stop-rest{grid-column:1/3;display:flex;gap:10px;align-items:center;font-size:calc(13px*var(--fz));color:var(--rest)}
 .stop-rest .num{font-weight:600}
+.meta{grid-column:1/3;display:flex;flex-wrap:wrap;gap:6px;font-size:12px;align-items:center}
+.tag{padding:2px 8px;border-radius:6px;background:var(--sunk);border:1px solid var(--line);color:var(--ink)}
+.tag.danger{color:var(--warn);border-color:var(--warn)}
+.tag.cond{color:var(--muted)}
+.tag.cond.bad{color:var(--warn)}
 .warn{color:var(--warn);font-weight:700}
-.leg{display:flex;align-items:center;gap:8px;padding:8px 0 8px 4px;font-size:13px;color:var(--walk)}
-.leg .num{font-weight:600;font-size:14px}
+.leg{display:flex;align-items:center;gap:8px;padding:8px 0 8px 4px;font-size:calc(13px*var(--fz));color:var(--walk)}
+.leg .num{font-weight:600;font-size:calc(14px*var(--fz))}
 .leg .cum{margin-left:auto;color:var(--muted)}
+.markli{padding:2px 0 6px}
+.mark{position:relative;display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%;text-align:left;padding:8px 12px;
+  border-radius:10px;border:1px dashed var(--line);font-size:calc(14px*var(--fz));min-height:44px}
+.mark::before{content:"";position:absolute;left:-19px;top:50%;width:8px;height:8px;margin-top:-4px;transform:rotate(45deg);background:var(--muted)}
+.mark b{font-weight:700} .mark.danger b{color:var(--warn)}
+.mark .num{color:var(--muted)}
 
 /* action bar */
 .action{position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--bg);border-top:1px solid var(--line);
   padding-top:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .action-in{max-width:640px;margin:0 auto;display:grid;gap:10px}
-.big{width:100%;min-height:84px;border-radius:18px;font-size:24px;font-weight:800;letter-spacing:.04em;
+.big{width:100%;min-height:calc(84px*var(--fz));border-radius:18px;font-size:calc(24px*var(--fz));font-weight:800;letter-spacing:.04em;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
   background:var(--accent);color:var(--accent-ink);box-shadow:0 2px 0 rgba(0,0,0,.15)}
 .big:active{transform:translateY(1px)}
 .big.depart{background:var(--rest);color:var(--surface)}
+:root.night .big.depart{color:#ff5c5c}
 .big small{font-family:var(--mono);font-size:14px;font-weight:500;opacity:.9;letter-spacing:0}
 .subrow{display:flex;gap:10px}
-.ghost{flex:1;min-height:48px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-size:15px}
+.ghost{flex:1;min-height:52px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-size:calc(15px*var(--fz))}
 .ghost.danger{color:var(--warn)}
 .ghost.armed{background:var(--warn);color:var(--surface);border-color:var(--warn)}
 
 /* sheet */
-.scrim{position:fixed;inset:0;z-index:40;background:rgba(10,15,12,.45);display:flex;align-items:flex-end;justify-content:center}
-.sheet{width:100%;max-width:640px;max-height:92%;overflow:auto;background:var(--surface);border-radius:20px 20px 0 0;
+.scrim{position:fixed;inset:0;z-index:40;background:rgba(10,15,12,.5);display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:640px;max-height:92%;overflow:auto;background:var(--surface);border-radius:20px 20px 0 0;box-sizing:border-box;
   padding-top:18px;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));
   padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));display:grid;gap:14px}
-.sheet h2{margin:0;font-size:19px}
-.field{display:grid;gap:6px}
-.field label{font-size:13px;color:var(--muted)}
+.sheet h2{margin:0;font-size:calc(19px*var(--fz))}
+.field{display:grid;gap:6px;min-width:0}
+.field>label,.field>.lbl{font-size:13px;color:var(--muted)}
 .field input,.field textarea,.field select{width:100%;box-sizing:border-box;min-height:50px;border-radius:12px;border:1px solid var(--line);
-  background:var(--bg);padding:10px 12px;font-size:17px}
+  background:var(--bg);padding:10px 12px;font-size:calc(17px*var(--fz))}
 .field textarea{min-height:76px;resize:vertical}
 .timefield{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px}
 .timefield input{min-width:0}
 .mini{min-height:50px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font-size:14px}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{min-height:40px;padding:0 14px;border-radius:99px;border:1px solid var(--line);background:var(--bg);font-size:15px}
+.chip{min-height:42px;padding:0 14px;border-radius:99px;border:1px solid var(--line);background:var(--bg);font-size:calc(15px*var(--fz))}
 .chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .row2{display:flex;gap:10px}
 .row2>*{flex:1}
-.primary{min-height:54px;border-radius:12px;background:var(--ink);color:var(--bg);font-weight:700;font-size:17px}
+.primary{min-height:54px;border-radius:12px;background:var(--ink);color:var(--bg);font-weight:700;font-size:calc(17px*var(--fz))}
 .hint{font-size:13px;color:var(--muted);margin:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tagbtn{min-height:calc(68px*var(--fz));border-radius:14px;border:1px solid var(--line);background:var(--bg);font-size:calc(18px*var(--fz));font-weight:700}
+.tagbtn.danger{color:var(--warn)}
+.geo{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;font-size:13px;color:var(--muted)}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;border-bottom:1px solid var(--line)}
+.toggle span{font-size:calc(16px*var(--fz))} .toggle small{display:block;font-size:12px;color:var(--muted)}
+
+/* report & stats */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+.sec{margin:24px 0 8px;font-size:14px;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.kv b{display:block;font-size:calc(22px*var(--fz));font-weight:600}
+.kv span{font-size:12px;color:var(--muted)}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table.rep{border-collapse:collapse;width:100%;font-size:calc(14px*var(--fz));min-width:520px}
+.rep th,.rep td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.rep th:first-child,.rep td:first-child{text-align:left;white-space:normal;min-width:140px}
+.rep th{font-size:12px;color:var(--muted);font-weight:600}
+.rep tr:last-child td{border-bottom:0}
+.rep .sub{display:block;font-size:12px;color:var(--muted)}
+.slow{color:var(--warn)} .fast{color:var(--walk)}
+.notes{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.notes li{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:14px}
+.peaks{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.peaks li{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.peaks b{display:block} .peaks span{font-size:12px;color:var(--muted)}
+.progress{height:10px;border-radius:99px;background:var(--sunk);overflow:hidden;margin-top:8px}
+.progress i{display:block;height:100%;background:var(--walk)}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.btnrow .ghost{min-width:140px}
 
 /* toast */
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(150px + env(safe-area-inset-bottom,0px));z-index:50;
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(170px + env(safe-area-inset-bottom,0px));z-index:50;
   width:min(560px,calc(100% - 32px));background:var(--ink);color:var(--bg);border-radius:14px;padding:10px 10px 10px 16px;
   display:flex;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
 .toast p{flex:1;margin:0;font-size:15px}
-.toast button{min-height:42px;padding:0 12px;border-radius:10px;color:var(--bg);border:1px solid color-mix(in srgb,var(--bg) 40%,transparent);font-size:14px}
+.toast button{min-height:42px;padding:0 12px;border-radius:10px;color:var(--bg);border:1px solid var(--bg);font-size:14px}
 </style>
 </head><body>
 
@@ -158,40 +209,54 @@ button{cursor:pointer;border:0;background:none}
 <script>
 (function(){
 'use strict';
-const KEY='hikelog.v1';
+const KEY='hikelog.v1', SKEY='hikelog.settings';
 const TYPES=['一般登山','百岳','日本登山','長程健行','其他'];
 const QUICK=['登山口','山屋','營地','三角點','山頂','鞍部','岔路','水源','休息點','停車場'];
+const TAGS=['水源','岔路','危險地形','收訊點','營地','廁所','觀景','百岳'];
+const MARKS=['水源','岔路','危險地形','收訊點','營地','廁所','觀景','路況不佳'];
+const DANGER=new Set(['危險地形','路況不佳']);
+const WEATHER=['晴','多雲','霧','雨','強風','雪'];
+const TEAM=['好','普通','差'];
 const $=s=>document.querySelector(s);
 const pad=n=>String(n).padStart(2,'0');
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 
 let db=load()||seed();
+let settings=Object.assign({night:false,large:false,gps:true},loadSettings());
 let view={name:'list',id:null};
-let armed=null, toastTimer=null;
+let armed=null, toastTimer=null, geoDeniedShown=false, cmpChoice={};
+normalize();applySettings();
 
-/* ---------- storage (local first; a sync layer can wrap save/load later) ---------- */
+/* ---------- storage ---------- */
 function load(){try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);if(d&&Array.isArray(d.trips))return d}}catch(e){}return null}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){showToast('無法儲存：此瀏覽器封鎖了本機儲存空間')}}
+function loadSettings(){try{return JSON.parse(localStorage.getItem(SKEY)||'{}')}catch(e){return {}}}
+function saveSettings(){try{localStorage.setItem(SKEY,JSON.stringify(settings))}catch(e){}applySettings()}
+function applySettings(){const r=document.documentElement;r.classList.toggle('night',!!settings.night);r.classList.toggle('large',!!settings.large)}
+function normalize(){db.trips.forEach(t=>{t.marks=t.marks||[];t.stations.forEach(s=>{s.tags=s.tags||[]})})}
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 
 function seed(){
   const d=(h,m)=>new Date(2026,9,18,h,m).getTime();
-  const st=(name,arr,dep,note='')=>({id:uid(),name,note,arr,dep});
-  return {trips:[{id:uid(),name:'範例｜雪山主東峰單攻',type:'百岳',note:'範例資料，看完可在「⋯」刪除',created:d(5,50),ended:d(17,20),stations:[
-    st('雪山登山口',null,d(6,10),'登山口服務站報到'),
-    st('七卡山莊',d(6,55),d(7,5),'補水'),
-    st('哭坡觀景台',d(8,10),d(8,20)),
-    st('雪山東峰',d(9,5),d(9,25)),
-    st('三六九山莊',d(10,15),d(10,55),'午餐、加衣'),
-    st('雪山主峰',d(12,50),d(13,20),'3886m 一等三角點'),
-    st('三六九山莊',d(14,45),d(15,0)),
-    st('雪山登山口',d(17,20),null)
+  const st=(name,arr,dep,note,alt,lat,lon,extra)=>Object.assign({id:uid(),name,note:note||'',arr,dep,alt,lat,lon,tags:[]},extra||{});
+  return {trips:[{id:uid(),name:'範例｜雪山主東峰單攻',type:'百岳',note:'範例資料，看完可在「⋯」刪除',created:d(5,50),ended:d(17,20),
+    marks:[{id:uid(),tag:'收訊點',ts:d(9,10),note:'中華電信 4G'},{id:uid(),tag:'危險地形',ts:d(11,40),note:'碎石坡，注意落石'}],
+    stations:[
+    st('雪山登山口',null,d(6,10),'登山口服務站報到',2140,24.3896,121.3105,{weather:'晴',team:'好'}),
+    st('七卡山莊',d(6,55),d(7,5),'補水',2463,24.3913,121.2986,{tags:['水源','廁所'],weather:'晴',team:'好'}),
+    st('哭坡觀景台',d(8,10),d(8,20),'',2990,24.3868,121.2817,{tags:['觀景'],weather:'多雲'}),
+    st('雪山東峰',d(9,5),d(9,25),'',3201,24.3862,121.2665,{tags:['百岳'],weather:'多雲',team:'好'}),
+    st('三六九山莊',d(10,15),d(10,55),'午餐、加衣',3100,24.3871,121.2524,{tags:['營地','廁所'],weather:'霧',team:'普通'}),
+    st('雪山主峰',d(12,50),d(13,20),'3886m 一等三角點',3886,24.3832,121.2318,{tags:['百岳'],weather:'霧',team:'普通'}),
+    st('三六九山莊',d(14,45),d(15,0),'',3100,24.3871,121.2524,{weather:'雨'}),
+    st('雪山登山口',d(17,20),null,'',2140,24.3896,121.3105,{team:'普通'})
   ]}]};
 }
 
-/* ---------- time helpers ---------- */
+/* ---------- helpers ---------- */
 function fmtDur(ms){if(ms==null||isNaN(ms))return '—';const neg=ms<0;let m=Math.round(Math.abs(ms)/60000);return (neg?'-':'')+Math.floor(m/60)+':'+pad(m%60)}
+function fmtDiff(ms){if(ms==null)return '—';const m=Math.round(ms/60000);if(m===0)return '±0';return (m>0?'+':'−')+fmtDur(Math.abs(ms))}
 function dayIndex(ts,base){const a=new Date(ts);a.setHours(0,0,0,0);const b=new Date(base);b.setHours(0,0,0,0);return Math.round((a-b)/864e5)}
 function fmtTime(ts,base){if(ts==null)return '—';const d=new Date(ts);const t=pad(d.getHours())+':'+pad(d.getMinutes());
   if(base!=null){const k=dayIndex(ts,base);if(k!==0)return 'D'+(k+1)+' '+t}return t}
@@ -200,18 +265,24 @@ function fmtFull(ts){if(ts==null)return '';const d=new Date(ts);return fmtDate(t
 function toInput(ts){if(ts==null)return '';const d=new Date(ts);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())}
 function fromInput(v){if(!v)return null;const t=new Date(v).getTime();return isNaN(t)?null:t}
 const mins=ms=>ms==null?'':Math.round(ms/60000);
+const isExample=t=>/^範例/.test(t.name);
+function haversine(a,b){if(a.lat==null||b.lat==null||a.lon==null||b.lon==null)return null;const R=6371,r=x=>x*Math.PI/180;
+  const dl=r(b.lat-a.lat),dn=r(b.lon-a.lon);const h=Math.sin(dl/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
 
 /* ---------- core calculation ---------- */
 function calc(t,now){
   const S=t.stations, active=!t.ended&&S.length>0;
-  const out={rows:[],elapsed:0,rest:0,walk:0,start:null,active,state:'idle'};
+  const out={rows:[],elapsed:0,rest:0,walk:0,start:null,active,state:'idle',up:0,down:0,dist:0,hasAlt:false,hasDist:false};
   if(!S.length)return out;
   const start=S[0].dep??S[0].arr; out.start=start;
   let last=start??0;
   S.forEach((s,i)=>{
-    const r={rest:null,leg:null,ongoing:false,warn:false,cum:null};
+    const r={rest:null,leg:null,ongoing:false,warn:false,cum:null,up:null,down:null,dist:null};
     if(s.arr!=null&&s.dep!=null){r.rest=s.dep-s.arr;if(r.rest<0)r.warn=true}
-    if(i>0){const p=S[i-1];if(p.dep!=null&&s.arr!=null){r.leg=s.arr-p.dep;if(r.leg<0)r.warn=true}}
+    if(i>0){const p=S[i-1];
+      if(p.dep!=null&&s.arr!=null){r.leg=s.arr-p.dep;if(r.leg<0)r.warn=true}
+      if(p.alt!=null&&s.alt!=null){const dz=s.alt-p.alt;r.up=Math.max(0,dz);r.down=Math.max(0,-dz);out.up+=r.up;out.down+=r.down;out.hasAlt=true}
+      const km=haversine(p,s);if(km!=null){r.dist=km;out.dist+=km;out.hasDist=true}}
     if(i===S.length-1&&active&&s.arr!=null&&s.dep==null){r.rest=Math.max(0,now-s.arr);r.ongoing=true}
     if(s.arr!=null&&start!=null)r.cum=s.arr-start;
     [s.arr,s.dep].forEach(v=>{if(v!=null&&v>last)last=v});
@@ -219,6 +290,7 @@ function calc(t,now){
     out.rows.push(r);
   });
   const end=active?Math.max(now,last):last;
+  out.end=end;
   out.elapsed=start!=null?Math.max(0,end-start):0;
   out.walk=Math.max(0,out.elapsed-out.rest);
   const l=S[S.length-1];
@@ -228,16 +300,29 @@ function calc(t,now){
 function nextAction(t){if(t.ended)return null;const S=t.stations;if(!S.length)return 'start';const l=S[S.length-1];return (l.arr!=null&&l.dep==null)?'depart':'arrive'}
 const trip=()=>db.trips.find(x=>x.id===view.id);
 
+/* leg comparison between trips that share station names */
+const legKey=(a,b)=>a.trim()+'→'+b.trim();
+function legMap(t){const m=new Map(),c=calc(t,Date.now());t.stations.forEach((s,i)=>{if(i&&c.rows[i].leg!=null){const k=legKey(t.stations[i-1].name,s.name);if(!m.has(k))m.set(k,c.rows[i].leg)}});return m}
+function compareCandidates(t){const mine=legMap(t);return db.trips.filter(o=>o.id!==t.id&&o.stations.length>1).map(o=>{const om=legMap(o);let n=0;mine.forEach((_,k)=>{if(om.has(k))n++});return {t:o,n,start:calc(o,Date.now()).start||o.created}}).filter(x=>x.n>0).sort((a,b)=>b.start-a.start)}
+
 /* ---------- render ---------- */
-function render(){armed=null;view.name==='trip'&&trip()?renderTrip():renderList()}
+function render(){armed=null;
+  if(view.name==='trip'&&trip())return renderTrip();
+  if(view.name==='report'&&trip())return renderReport();
+  if(view.name==='stats')return renderStats();
+  renderList();
+}
+function go(v){view=v;window.scrollTo(0,0);render()}
 
 function renderList(){
   view={name:'list',id:null};
   const now=Date.now();
-  const trips=[...db.trips].sort((a,b)=>(b.created||0)-(a.created||0));
+  const trips=[...db.trips].sort((a,b)=>(calc(b,now).start??b.created)-(calc(a,now).start??a.created));
+  $('#app').className='app noaction';
   $('#app').innerHTML=`
-    <header class="top"><h1>登山行程紀錄</h1><span class="eyebrow">${trips.length} 筆</span></header>
-    <button class="newtrip" data-act="newtrip" id="btn-newtrip">＋ 新增行程</button>
+    <header class="top"><h1>登山行程紀錄</h1>
+      <button class="iconbtn" data-act="stats">統計</button><button class="iconbtn" data-act="display" aria-label="顯示設定">Aa</button></header>
+    <button class="newtrip" data-act="newtrip">＋ 新增行程</button>
     ${trips.length?`<ul class="trips">${trips.map(t=>{const c=calc(t,now);return `<li><button class="trip" data-act="open" data-id="${t.id}">
       <span class="trip-name">${esc(t.name)}</span>
       <span class="trip-dur num">${fmtDur(c.elapsed)}<small>累積經過</small></span>
@@ -245,12 +330,24 @@ function renderList(){
         <span class="num">${fmtDate(c.start??t.created)}</span><span>${t.stations.length} 站</span></span></button></li>`}).join('')}</ul>`
     :`<p class="empty">還沒有行程。按「新增行程」開始第一筆紀錄。</p>`}
     <div class="tools">
-      <button class="iconbtn" data-act="backup" id="btn-backup">備份全部（JSON）</button>
-      <button class="iconbtn" data-act="restore" id="btn-restore">從備份還原</button>
+      <button class="iconbtn" data-act="backup">備份全部（JSON）</button>
+      <button class="iconbtn" data-act="restore">從備份還原</button>
     </div>
     <p class="hint" style="margin-top:14px">資料存在這支手機上，離線也能使用。換手機前請先備份。</p>`;
   $('#actionbar').innerHTML='';
 }
+
+function stationMeta(s){
+  const bits=[];
+  (s.tags||[]).forEach(g=>bits.push(`<span class="tag ${DANGER.has(g)?'danger':''}">${esc(g)}</span>`));
+  if(s.weather)bits.push(`<span class="tag cond">${esc(s.weather)}</span>`);
+  if(s.team)bits.push(`<span class="tag cond ${s.team==='差'?'bad':''}">體力 ${esc(s.team)}</span>`);
+  if(s.alt!=null)bits.push(`<span class="num" style="color:var(--muted)">${s.alt}m</span>`);
+  else if(s.lat!=null)bits.push(`<span style="color:var(--muted)">已定位</span>`);
+  return bits.length?`<span class="meta">${bits.join('')}</span>`:'';
+}
+function markRow(m,base){return `<li class="markli"><button class="mark ${DANGER.has(m.tag)?'danger':''}" data-act="editmark" data-id="${m.id}">
+  <b>${esc(m.tag)}</b><span class="num">${fmtTime(m.ts,base)}</span>${m.note?`<span>${esc(m.note)}</span>`:''}</button></li>`}
 
 function renderTrip(){
   const t=trip(); if(!t)return renderList();
@@ -260,21 +357,28 @@ function renderTrip(){
   if(c.state==='rest'){const l=S[S.length-1];cls='rest';statusText=`休息中 · ${esc(l.name)} <span class="num">${fmtDur(now-l.arr)}</span>`}
   if(c.state==='done'){cls='done';statusText=`已結束 · ${fmtDate(c.start??t.created)}`}
   const tot=c.walk+c.rest||1;
+  const marks=[...t.marks].sort((a,b)=>a.ts-b.ts); let mi=0;
+  const flushMarks=lim=>{let h='';while(mi<marks.length&&(lim==null||marks[mi].ts<lim)){h+=markRow(marks[mi],c.start);mi++}return h};
   let rows='';
   S.forEach((s,i)=>{
-    const r=c.rows[i];
+    const r=c.rows[i], ref=s.arr??s.dep;
     if(i>0)rows+=`<li class="leg"><span>行走</span><span class="num ${r.leg!=null&&r.leg<0?'warn':''}">${fmtDur(r.leg)}</span>${r.cum!=null?`<span class="cum">累積 <span class="num">${fmtDur(r.cum)}</span></span>`:''}</li>`;
+    rows+=flushMarks(ref);
     const unnamed=/^第\d+站$/.test(s.name);
+    const showRest=r.rest!=null&&(r.ongoing||r.warn||Math.round(r.rest/60000)!==0);
     rows+=`<li><button class="stop ${i===0?'first':''} ${i===S.length-1&&t.ended?'last':''} ${r.ongoing?'now':''}" data-act="edit" data-i="${i}">
       <span class="stop-name ${unnamed?'unnamed':''}">${esc(s.name)}${unnamed?'（點此命名）':''}</span>
       <span class="stop-times num">${s.arr!=null?`<div><span class="k">抵</span>${fmtTime(s.arr,c.start)}</div>`:''}${s.dep!=null?`<div><span class="k">離</span>${fmtTime(s.dep,c.start)}</div>`:''}</span>
       ${s.note?`<span class="stop-note">${esc(s.note)}</span>`:''}
-      ${r.rest!=null&&(r.ongoing||r.warn||Math.round(r.rest/60000)!==0)?`<span class="stop-rest">${r.ongoing?'休息中':'休息'} <span class="num ${r.warn?'warn':''}">${fmtDur(r.rest)}</span>${r.warn?'<span class="warn">時間順序有誤</span>':''}</span>`:''}
+      ${stationMeta(s)}
+      ${showRest?`<span class="stop-rest">${r.ongoing?'休息中':'休息'} <span class="num ${r.warn?'warn':''}">${fmtDur(r.rest)}</span>${r.warn?'<span class="warn">時間順序有誤</span>':''}</span>`:''}
     </button></li>`;
   });
+  rows+=flushMarks(null);
+  $('#app').className='app';
   $('#app').innerHTML=`
-    <header class="top"><button class="iconbtn" data-act="back" aria-label="回行程列表">‹ 行程</button>
-      <h1>${esc(t.name)}</h1><button class="iconbtn" data-act="tripmenu" aria-label="行程設定">⋯</button></header>
+    <header class="top"><button class="iconbtn" data-act="back" aria-label="回行程列表">‹</button>
+      <h1>${esc(t.name)}</h1><button class="iconbtn" data-act="display" aria-label="顯示設定">Aa</button><button class="iconbtn" data-act="tripmenu" aria-label="行程設定">⋯</button></header>
     <div class="status ${cls}"><span class="dotlive"></span><span>${statusText}</span></div>
     <section class="stats" aria-label="時間統計">
       <div class="stat"><b class="num">${fmtDur(c.elapsed)}</b><span>累積經過</span></div>
@@ -283,46 +387,70 @@ function renderTrip(){
       <div class="stat"><b class="num">${S.filter(s=>s.arr!=null).length}</b><span>抵達站數</span></div>
     </section>
     <div class="bar" aria-hidden="true"><i class="w" style="width:${c.walk/tot*100}%"></i><i class="r" style="width:${c.rest/tot*100}%"></i></div>
-    ${S.length?`<ol class="tl">${rows}</ol>`:`<p class="empty" style="margin-top:20px">在登山口按下「記錄出發」，就會開始計時。</p>`}
-    ${t.note?`<p class="hint" style="margin-top:16px">${esc(t.note)}</p>`:''}`;
+    ${S.length||marks.length?`<ol class="tl">${rows}</ol>`:`<p class="empty" style="margin-top:20px">在登山口按下「記錄出發」，就會開始計時。</p>`}
+    ${t.note?`<p class="hint" style="margin-top:16px">${esc(t.note)}</p>`:''}
+    ${S.length>1?`<div class="btnrow"><button class="ghost" data-act="report">查看行程報告</button></div>`:''}`;
   renderAction(t);
 }
 
 function renderAction(t){
   const a=nextAction(t), now=new Date(), clock=pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
-  if(!a){$('#actionbar').innerHTML=`<div class="action"><div class="action-in"><button class="ghost" data-act="reopen">重新開啟這個行程</button></div></div>`;return}
+  if(!a){$('#actionbar').innerHTML=`<div class="action"><div class="action-in"><div class="subrow"><button class="ghost" data-act="report">行程報告</button><button class="ghost" data-act="reopen">重新開啟行程</button></div></div></div>`;return}
   const label={start:'記錄出發',arrive:'記錄抵達',depart:'記錄離開'}[a];
   $('#actionbar').innerHTML=`<div class="action"><div class="action-in">
-    <button class="big ${a==='depart'?'depart':''}" data-act="${a}" id="btn-main">${label}<small id="clock">${clock}</small></button>
-    ${t.stations.length?`<div class="subrow"><button class="ghost" data-act="endtrip" id="btn-end">結束行程</button></div>`:''}
+    <button class="big ${a==='depart'?'depart':''}" data-act="${a}">${label}<small id="clock">${clock}</small></button>
+    <div class="subrow"><button class="ghost" data-act="markmenu">＋ 標記</button>${t.stations.length?`<button class="ghost" data-act="endtrip">結束行程</button>`:''}</div>
   </div></div>`;
+}
+
+/* ---------- GPS: one fix per tap, never continuous ---------- */
+function grabGeo(tripId,kind,id,quiet){
+  if(!settings.gps||!navigator.geolocation)return;
+  try{navigator.geolocation.getCurrentPosition(p=>{
+    const t=db.trips.find(x=>x.id===tripId);if(!t)return;
+    const o=(kind==='mark'?t.marks:t.stations).find(x=>x.id===id);if(!o)return;
+    o.lat=+p.coords.latitude.toFixed(6);o.lon=+p.coords.longitude.toFixed(6);o.acc=Math.round(p.coords.accuracy);
+    if(p.coords.altitude!=null&&(o.alt==null||!quiet))o.alt=Math.round(p.coords.altitude);
+    save();
+    if(!$('#sheethost').innerHTML&&view.name==='trip'){const y=window.scrollY;renderTrip();window.scrollTo(0,y)}
+    else if(!quiet)showToast('已更新位置（誤差約 '+o.acc+' m）');
+  },err=>{
+    if(err.code===1&&!geoDeniedShown){geoDeniedShown=true;showToast('未允許定位：時間照常記錄。可在「Aa」關閉記錄位置')}
+    else if(!quiet)showToast('定位失敗，請到開闊處再試')
+  },{enableHighAccuracy:true,timeout:30000,maximumAge:20000})}catch(e){}
 }
 
 /* ---------- actions ---------- */
 function snapshot(t){return JSON.stringify(t)}
 function restoreSnap(s){const o=JSON.parse(s);const i=db.trips.findIndex(x=>x.id===o.id);if(i>=0)db.trips[i]=o;save();render()}
+const undoBtn=snap=>({label:'復原',fn:()=>{restoreSnap(snap);showToast('已復原')}});
+function vibrate(){try{navigator.vibrate&&navigator.vibrate(30)}catch(e){}}
 
 function record(kind){
   const t=trip(); if(!t)return;
   const snap=snapshot(t), now=Date.now(), S=t.stations;
-  if(kind==='start')S.push({id:uid(),name:'登山口',note:'',arr:null,dep:now});
-  if(kind==='arrive')S.push({id:uid(),name:'第'+S.length+'站',note:'',arr:now,dep:null});
-  if(kind==='depart')S[S.length-1].dep=now;
-  save(); render();
-  try{navigator.vibrate&&navigator.vibrate(30)}catch(e){}
+  let target;
+  if(kind==='start'){target={id:uid(),name:'登山口',note:'',arr:null,dep:now,tags:[]};S.push(target)}
+  if(kind==='arrive'){target={id:uid(),name:'第'+S.length+'站',note:'',arr:now,dep:null,tags:[]};S.push(target)}
+  if(kind==='depart'){target=S[S.length-1];target.dep=now}
+  save(); render(); vibrate();
+  if(kind!=='depart'||target.lat==null)grabGeo(t.id,'station',target.id,true);
   const idx=S.length-1;
   const msg={start:'已記錄出發',arrive:'已記錄抵達',depart:'已記錄離開'}[kind]+' '+fmtTime(now);
-  showToast(msg,[
-    ...(kind!=='depart'?[{label:'命名',fn:()=>openStation(idx)}]:[]),
-    {label:'復原',fn:()=>{restoreSnap(snap);showToast('已復原')}}
-  ]);
+  showToast(msg,[...(kind!=='depart'?[{label:'命名',fn:()=>openStation(idx)}]:[]),undoBtn(snap)]);
 }
-
+function addMark(tag){
+  const t=trip(); const snap=snapshot(t), now=Date.now();
+  const m={id:uid(),tag,ts:now,note:''}; t.marks.push(m);
+  save(); closeSheet(); render(); vibrate();
+  grabGeo(t.id,'mark',m.id,true);
+  showToast('已標記 '+tag+' '+fmtTime(now),[{label:'備註',fn:()=>openMark(m.id)},undoBtn(snap)]);
+}
 function endTrip(){
   const t=trip(); const snap=snapshot(t), now=Date.now(), S=t.stations, l=S[S.length-1];
-  if(l.dep!=null)S.push({id:uid(),name:'終點',note:'',arr:now,dep:null});
+  if(l.dep!=null){const s={id:uid(),name:'終點',note:'',arr:now,dep:null,tags:[]};S.push(s);grabGeo(t.id,'station',s.id,true)}
   t.ended=Math.max(now,l.arr||0); save(); render();
-  showToast('行程已結束',[{label:'復原',fn:()=>{restoreSnap(snap);showToast('已復原')}}]);
+  showToast('行程已結束',[{label:'看報告',fn:()=>go({name:'report',id:t.id})},undoBtn(snap)]);
 }
 
 /* ---------- sheets ---------- */
@@ -331,39 +459,57 @@ function openSheet(html,onMount){
   onMount&&onMount($('#sheethost .sheet'));
 }
 function closeSheet(){$('#sheethost').innerHTML=''}
+const chipSet=(id,list,sel,multi)=>`<div class="chips" id="${id}" data-multi="${multi?1:0}">${list.map(x=>`<button type="button" class="chip" data-act="pick" aria-pressed="${multi?(sel||[]).includes(x):x===sel}">${x}</button>`).join('')}</div>`;
+const picked=id=>[...document.querySelectorAll('#'+id+' [aria-pressed="true"]')].map(b=>b.textContent);
 
-function typeChips(sel){return `<div class="chips" id="typechips">${TYPES.map(x=>`<button type="button" class="chip" data-act="pick" aria-pressed="${x===sel}">${x}</button>`).join('')}</div>`}
+function openDisplay(){
+  const row=(key,label,sub)=>`<div class="toggle"><span>${label}<small>${sub}</small></span><button class="chip" data-act="setting" data-key="${key}" aria-pressed="${!!settings[key]}">${settings[key]?'開':'關'}</button></div>`;
+  openSheet(`<h2>顯示與記錄</h2>
+    ${row('night','夜間紅光模式','摸黑起登用，不破壞夜視，OLED 手機也較省電')}
+    ${row('large','大字模式','字和按鈕放大，戴手套或光線差時好按')}
+    ${row('gps','按下時記錄位置','只在按「抵達／離開／標記」時定位一次，不在背景追蹤')}
+    <p class="hint">建議晚上把手機螢幕亮度也調到最低，紅光效果更好。</p>
+    <button class="primary" data-act="closesheet-btn">完成</button>`);
+}
 
 function openNewTrip(){
   openSheet(`<h2>新增行程</h2>
     <div class="field"><label for="f-name">行程名稱</label><input id="f-name" placeholder="例：嘉明湖三天兩夜" autocomplete="off"></div>
-    <div class="field"><label>類型</label>${typeChips('一般登山')}</div>
+    <div class="field"><span class="lbl">類型</span>${chipSet('typechips',TYPES,'一般登山')}</div>
     <div class="field"><label for="f-note">備註</label><textarea id="f-note" placeholder="隊員、路線、天氣…"></textarea></div>
-    <div class="row2"><button class="ghost" data-act="closesheet-btn">取消</button><button class="primary" data-act="createtrip" id="btn-create">建立</button></div>`);
+    <div class="row2"><button class="ghost" data-act="closesheet-btn">取消</button><button class="primary" data-act="createtrip">建立</button></div>`);
 }
 function createTrip(){
   const name=$('#f-name').value.trim()||('行程 '+fmtDate(Date.now()));
-  const type=($('#typechips [aria-pressed="true"]')||{}).textContent||'一般登山';
-  const t={id:uid(),name,type,note:$('#f-note').value.trim(),created:Date.now(),ended:null,stations:[]};
-  db.trips.push(t); save(); closeSheet(); view={name:'trip',id:t.id}; render();
+  const t={id:uid(),name,type:picked('typechips')[0]||'一般登山',note:$('#f-note').value.trim(),created:Date.now(),ended:null,stations:[],marks:[]};
+  db.trips.push(t); save(); closeSheet(); go({name:'trip',id:t.id});
 }
 
 function openTripMenu(){
   const t=trip();
   openSheet(`<h2>行程設定</h2>
     <div class="field"><label for="f-name">行程名稱</label><input id="f-name" value="${esc(t.name)}" autocomplete="off"></div>
-    <div class="field"><label>類型</label>${typeChips(t.type)}</div>
+    <div class="field"><span class="lbl">類型</span>${chipSet('typechips',TYPES,t.type)}</div>
     <div class="field"><label for="f-note">備註</label><textarea id="f-note">${esc(t.note)}</textarea></div>
     <button class="primary" data-act="savetrip">儲存</button>
-    <div class="field"><label>匯出（可貼到 Excel、Google 試算表、Notion）</label>
+    <button class="ghost" data-act="report">行程報告</button>
+    <div class="field"><span class="lbl">匯出（可貼到 Excel、Google 試算表、Notion）</span>
       <div class="row2"><button class="ghost" data-act="csvfile">分享／下載 CSV</button><button class="ghost" data-act="csvcopy">複製表格</button></div></div>
     ${t.ended?`<button class="ghost" data-act="reopen">重新開啟行程</button>`:''}
-    <button class="ghost danger" data-act="deltrip" id="btn-del">刪除此行程</button>`);
+    <button class="ghost danger" data-act="deltrip">刪除此行程</button>`);
 }
 function saveTrip(){
   const t=trip(); t.name=$('#f-name').value.trim()||t.name; t.note=$('#f-note').value.trim();
-  t.type=($('#typechips [aria-pressed="true"]')||{}).textContent||t.type; save(); closeSheet(); render(); showToast('已儲存');
+  t.type=picked('typechips')[0]||t.type; save(); closeSheet(); render(); showToast('已儲存');
 }
+
+function geoBlock(o,kind,ref){
+  return `<div class="field"><label for="f-alt">海拔（m）</label><input id="f-alt" type="number" inputmode="numeric" value="${o.alt??''}" placeholder="按下時自動取得，可手動修正"></div>
+    <div class="geo">${o.lat!=null?`<span class="num">${o.lat.toFixed(5)}, ${o.lon.toFixed(5)}</span>${o.acc!=null?`<span>誤差約 ${o.acc} m</span>`:''}
+      <a href="https://www.google.com/maps?q=${o.lat},${o.lon}" target="_blank" rel="noopener">在地圖上看</a>`:'<span>尚無座標</span>'}
+      <button type="button" class="mini" data-act="regeo" data-kind="${kind}" data-ref="${ref}">${o.lat!=null?'重新定位':'現在定位'}</button></div>`;
+}
+function readAlt(){const v=$('#f-alt').value.trim();return v===''?null:Math.round(+v)}
 
 function openStation(i){
   const t=trip(), s=t.stations[i]; if(!s)return;
@@ -375,24 +521,157 @@ function openStation(i){
       <input type="datetime-local" id="f-arr" value="${toInput(s.arr)}"><button type="button" class="mini" data-act="setnow" data-for="f-arr">現在</button><button type="button" class="mini" data-act="clear" data-for="f-arr">清除</button></div></div>
     <div class="field"><label for="f-dep">離開時間</label><div class="timefield">
       <input type="datetime-local" id="f-dep" value="${toInput(s.dep)}"><button type="button" class="mini" data-act="setnow" data-for="f-dep">現在</button><button type="button" class="mini" data-act="clear" data-for="f-dep">清除</button></div></div>
-    <div class="field"><label for="f-snote">備註</label><textarea id="f-snote" placeholder="天氣、水源、路況、隊員狀況…">${esc(s.note)}</textarea></div>
-    <div class="row2"><button class="ghost danger" data-act="delstation" data-i="${i}" id="btn-delst">刪除此站</button><button class="primary" data-act="savestation" data-i="${i}">完成</button></div>`);
+    <div class="field"><span class="lbl">標記（可複選）</span>${chipSet('tagchips',TAGS,s.tags,true)}</div>
+    <div class="field"><span class="lbl">天氣</span>${chipSet('wxchips',WEATHER,s.weather)}</div>
+    <div class="field"><span class="lbl">隊員體力</span>${chipSet('teamchips',TEAM,s.team)}</div>
+    ${geoBlock(s,'station',s.id)}
+    <div class="field"><label for="f-snote">備註</label><textarea id="f-snote" placeholder="水源、路況、隊員狀況…">${esc(s.note)}</textarea></div>
+    <div class="row2"><button class="ghost danger" data-act="delstation" data-i="${i}">刪除此站</button><button class="primary" data-act="savestation" data-i="${i}">完成</button></div>`);
 }
 function saveStation(i){
   const t=trip(), s=t.stations[i];
   const n=$('#f-sname').value.trim(); if(n)s.name=n;
   s.arr=fromInput($('#f-arr').value); s.dep=fromInput($('#f-dep').value); s.note=$('#f-snote').value.trim();
+  s.tags=picked('tagchips'); s.weather=picked('wxchips')[0]||null; s.team=picked('teamchips')[0]||null; s.alt=readAlt();
+  if(t.ended){let mx=0;t.stations.forEach(x=>[x.arr,x.dep].forEach(v=>{if(v!=null&&v>mx)mx=v}));t.ended=mx||t.ended}
   save(); closeSheet(); render();
+}
+
+function openMarkMenu(){
+  openSheet(`<h2>快速標記</h2><p class="hint">按一下就記下現在的時間${settings.gps?'與位置':''}，不影響休息與行走時間計算。</p>
+    <div class="grid2">${MARKS.map(m=>`<button class="tagbtn ${DANGER.has(m)?'danger':''}" data-act="addmark" data-tag="${m}">${m}</button>`).join('')}</div>
+    <button class="ghost" data-act="closesheet-btn">取消</button>`);
+}
+function openMark(id){
+  const t=trip(), m=t.marks.find(x=>x.id===id); if(!m)return;
+  openSheet(`<h2>標記：${esc(m.tag)}</h2>
+    <div class="field"><span class="lbl">類型</span>${chipSet('mtag',MARKS,m.tag)}</div>
+    <div class="field"><label for="f-mts">時間</label><input type="datetime-local" id="f-mts" value="${toInput(m.ts)}"></div>
+    ${geoBlock(m,'mark',m.id)}
+    <div class="field"><label for="f-mnote">備註</label><textarea id="f-mnote" placeholder="例：水量小、往右是錯路">${esc(m.note)}</textarea></div>
+    <div class="row2"><button class="ghost danger" data-act="delmark" data-id="${m.id}">刪除標記</button><button class="primary" data-act="savemark" data-id="${m.id}">完成</button></div>`);
+}
+function saveMark(id){
+  const t=trip(), m=t.marks.find(x=>x.id===id); if(!m)return;
+  m.tag=picked('mtag')[0]||m.tag; m.ts=fromInput($('#f-mts').value)??m.ts; m.note=$('#f-mnote').value.trim(); m.alt=readAlt();
+  save(); closeSheet(); render();
+}
+
+/* ---------- report ---------- */
+function reportData(t){
+  const c=calc(t,Date.now()), S=t.stations;
+  const legs=S.map((s,i)=>{if(!i)return null;const r=c.rows[i];const h=r.leg!=null&&r.leg>0?r.leg/36e5:null;
+    return {from:S[i-1],to:s,r,vUp:h&&r.up?Math.round(r.up/h):null,vDown:h&&r.down?Math.round(r.down/h):null,kmh:h&&r.dist!=null?r.dist/h:null}}).filter(Boolean);
+  return {c,legs};
+}
+function renderReport(){
+  const t=trip(); const {c,legs}=reportData(t);
+  const restPct=c.elapsed?Math.round(c.rest/c.elapsed*100):0;
+  const days=c.start!=null?dayIndex(c.end,c.start)+1:1;
+  const cands=compareCandidates(t);
+  let other=cands.find(x=>x.t.id===cmpChoice[t.id])||cands.find(x=>x.start<(c.start||Infinity))||cands[0];
+  let cmpHtml='';
+  if(other){
+    const om=legMap(other.t); let sumA=0,sumB=0;
+    const rowsC=legs.filter(l=>l.r.leg!=null&&om.has(legKey(l.from.name,l.to.name))).map(l=>{const b=om.get(legKey(l.from.name,l.to.name)),d=l.r.leg-b;sumA+=l.r.leg;sumB+=b;
+      return `<tr><td>${esc(l.from.name)} → ${esc(l.to.name)}</td><td class="num">${fmtDur(l.r.leg)}</td><td class="num">${fmtDur(b)}</td><td class="num ${d>60000?'slow':d<-60000?'fast':''}">${fmtDiff(d)}</td></tr>`}).join('');
+    cmpHtml=`<h3 class="sec">路段比較</h3>
+      ${cands.length>1?`<div class="field" style="margin-bottom:10px"><label for="f-cmp">比較對象</label><select id="f-cmp" data-act="cmp">${cands.map(x=>`<option value="${x.t.id}" ${x.t.id===other.t.id?'selected':''}>${esc(x.t.name)}（${fmtDate(x.start)}，${x.n} 段相同）</option>`).join('')}</select></div>`
+        :`<p class="hint" style="margin-bottom:10px">對照：${esc(other.t.name)}（${fmtDate(other.start)}）</p>`}
+      <div class="scroll"><table class="rep"><thead><tr><th>相同路段</th><th>本次</th><th>上次</th><th>差距</th></tr></thead><tbody>${rowsC}
+      <tr><td><b>合計</b></td><td class="num"><b>${fmtDur(sumA)}</b></td><td class="num"><b>${fmtDur(sumB)}</b></td><td class="num ${sumA-sumB>60000?'slow':sumA-sumB<-60000?'fast':''}"><b>${fmtDiff(sumA-sumB)}</b></td></tr></tbody></table></div>
+      <p class="hint" style="margin-top:8px">站名相同的路段才會比較。紅色表示比上次慢，綠色表示比上次快。</p>`;
+  }
+  const notes=t.stations.filter(s=>s.note||s.weather||s.team||(s.tags&&s.tags.length)).map(s=>`<li><b>${esc(s.name)}</b> <span class="num" style="color:var(--muted)">${fmtTime(s.arr??s.dep,c.start)}</span><br>${[s.weather&&('天氣 '+s.weather),s.team&&('體力 '+s.team),(s.tags||[]).join('、'),s.note].filter(Boolean).map(esc).join('｜')}</li>`);
+  const mk=[...t.marks].sort((a,b)=>a.ts-b.ts).map(m=>`<li><b class="${DANGER.has(m.tag)?'warn':''}">${esc(m.tag)}</b> <span class="num" style="color:var(--muted)">${fmtTime(m.ts,c.start)}</span>${m.alt!=null?` <span class="num" style="color:var(--muted)">${m.alt}m</span>`:''}${m.note?'｜'+esc(m.note):''}</li>`);
+  $('#app').className='app noaction';
+  $('#app').innerHTML=`
+    <header class="top"><button class="iconbtn" data-act="backtrip" aria-label="回行程">‹</button><h1>行程報告</h1></header>
+    <div class="card">
+      <div style="font-weight:700;font-size:calc(18px*var(--fz))">${esc(t.name)}</div>
+      <p class="hint" style="margin:4px 0 14px">${esc(t.type||'')}｜${c.start?fmtDate(c.start):''}${days>1?'，'+days+' 天':''}｜${t.stations.length} 站</p>
+      <div class="kv">
+        <div><b class="num">${fmtDur(c.elapsed)}</b><span>累積經過</span></div>
+        <div><b class="num" style="color:var(--walk)">${fmtDur(c.walk)}</b><span>實際行走</span></div>
+        <div><b class="num" style="color:var(--rest)">${fmtDur(c.rest)}</b><span>累積休息（${restPct}%）</span></div>
+        ${c.hasAlt?`<div><b class="num">↑${c.up} ↓${c.down}</b><span>爬升／下降 m（依各站海拔）</span></div>`:''}
+        ${c.hasDist?`<div><b class="num">${c.dist.toFixed(1)}</b><span>站間直線距離 km</span></div>`:''}
+      </div>
+      <div class="bar" aria-hidden="true"><i class="w" style="width:${100-restPct}%"></i><i class="r" style="width:${restPct}%"></i></div>
+    </div>
+    <h3 class="sec">各段行走</h3>
+    <div class="scroll"><table class="rep"><thead><tr><th>路段</th><th>行走</th><th>爬升／下降</th><th>垂直速度</th><th>到站休息</th></tr></thead><tbody>
+      ${legs.map(l=>`<tr><td>${esc(l.from.name)} → ${esc(l.to.name)}<span class="sub num">${fmtTime(l.from.dep,c.start)} – ${fmtTime(l.to.arr,c.start)}</span></td>
+        <td class="num">${fmtDur(l.r.leg)}</td>
+        <td class="num">${l.r.up!=null?`↑${l.r.up} ↓${l.r.down}`:'—'}</td>
+        <td class="num">${l.vUp?`↑${l.vUp} m/h`:l.vDown?`↓${l.vDown} m/h`:'—'}</td>
+        <td class="num">${l.r.rest!=null&&!l.r.ongoing?fmtDur(l.r.rest):'—'}</td></tr>`).join('')}
+    </tbody></table></div>
+    <p class="hint" style="margin-top:8px">垂直速度＝該段爬升（或下降）÷ 行走時間。直線距離由座標算出，會比實際步道短。和計畫時間的差距，會在加入「計畫時間」功能後顯示在這裡。</p>
+    ${cmpHtml}
+    ${notes.length?`<h3 class="sec">沿途狀況</h3><ul class="notes">${notes.join('')}</ul>`:''}
+    ${mk.length?`<h3 class="sec">標記</h3><ul class="notes">${mk.join('')}</ul>`:''}
+    <div class="btnrow"><button class="ghost" data-act="sharereport">分享報告文字</button><button class="ghost" data-act="csvfile">分享／下載 CSV</button><button class="ghost" data-act="csvcopy">複製表格</button></div>`;
+  $('#actionbar').innerHTML='';
+}
+function reportText(t){
+  const {c,legs}=reportData(t);const restPct=c.elapsed?Math.round(c.rest/c.elapsed*100):0;
+  const L=[`【行程報告】${t.name}${t.type?'（'+t.type+'）':''}`,c.start?fmtDate(c.start):'',
+    `累積經過 ${fmtDur(c.elapsed)}｜行走 ${fmtDur(c.walk)}｜休息 ${fmtDur(c.rest)}（${restPct}%）`];
+  if(c.hasAlt)L.push(`爬升 ${c.up} m｜下降 ${c.down} m`);
+  L.push('');
+  t.stations.forEach((s,i)=>{const r=c.rows[i];
+    if(i)L.push(`  ↓ 行走 ${fmtDur(r.leg)}${r.up!=null?`（↑${r.up} ↓${r.down}）`:''}`);
+    const ex=[s.weather,s.team&&('體力'+s.team),...(s.tags||[])].filter(Boolean).join('、');
+    L.push(`${fmtTime(s.arr??s.dep,c.start)} ${s.name}${s.alt!=null?' '+s.alt+'m':''}${r.rest&&!r.ongoing&&Math.round(r.rest/6e4)?'｜休息 '+fmtDur(r.rest):''}${ex?'｜'+ex:''}${s.note?'｜'+s.note:''}`)});
+  if(t.marks.length){L.push('','標記：');[...t.marks].sort((a,b)=>a.ts-b.ts).forEach(m=>L.push(`${fmtTime(m.ts,c.start)} ${m.tag}${m.note?'｜'+m.note:''}`))}
+  return L.join('\n');
+}
+
+/* ---------- personal stats ---------- */
+function renderStats(){
+  const now=Date.now(), real=db.trips.filter(t=>!isExample(t)&&t.stations.length);
+  const done=real.filter(t=>t.ended);
+  let el=0,wk=0,rs=0,up=0,st=0;
+  done.forEach(t=>{const c=calc(t,now);el+=c.elapsed;wk+=c.walk;rs+=c.rest;up+=c.up;st+=t.stations.filter(s=>s.arr!=null).length});
+  const byType={};done.forEach(t=>{byType[t.type||'其他']=(byType[t.type||'其他']||0)+1});
+  const peaks=new Map();
+  db.trips.filter(t=>!isExample(t)).forEach(t=>t.stations.forEach(s=>{if((s.tags||[]).includes('百岳')){const ts=s.arr??s.dep??t.created;const p=peaks.get(s.name.trim());if(!p||ts<p.ts)peaks.set(s.name.trim(),{ts,trip:t.name,alt:s.alt,count:(p?p.count:0)+1});else p.count++}}));
+  const plist=[...peaks.entries()].sort((a,b)=>a[1].ts-b[1].ts);
+  const years={};done.forEach(t=>{const y=new Date(calc(t,now).start||t.created).getFullYear();years[y]=(years[y]||0)+1});
+  $('#app').className='app noaction';
+  $('#app').innerHTML=`
+    <header class="top"><button class="iconbtn" data-act="back" aria-label="回行程列表">‹</button><h1>個人統計</h1></header>
+    ${!real.length?`<p class="empty">還沒有自己的行程紀錄。範例行程不列入統計。</p>`:''}
+    <div class="card"><div class="kv">
+      <div><b class="num">${done.length}</b><span>完成行程</span></div>
+      <div><b class="num">${fmtDur(el)}</b><span>累積經過時數</span></div>
+      <div><b class="num" style="color:var(--walk)">${fmtDur(wk)}</b><span>累積行走</span></div>
+      <div><b class="num" style="color:var(--rest)">${fmtDur(rs)}</b><span>累積休息</span></div>
+      <div><b class="num">${st}</b><span>抵達站數</span></div>
+      ${up?`<div><b class="num">${up.toLocaleString()}</b><span>累積爬升 m</span></div>`:''}
+    </div></div>
+    ${Object.keys(byType).length?`<h3 class="sec">依類型</h3><div class="card"><div class="kv">${Object.entries(byType).map(([k,v])=>`<div><b class="num">${v}</b><span>${esc(k)}</span></div>`).join('')}</div></div>`:''}
+    ${Object.keys(years).length>1?`<h3 class="sec">依年度</h3><div class="card"><div class="kv">${Object.entries(years).sort().map(([k,v])=>`<div><b class="num">${v}</b><span>${k} 年</span></div>`).join('')}</div></div>`:''}
+    <h3 class="sec">百岳完成清單</h3>
+    <div class="card"><b class="num" style="font-size:calc(26px*var(--fz))">${plist.length}</b> <span class="hint" style="display:inline">/ 100 座</span>
+      <div class="progress"><i style="width:${Math.min(100,plist.length)}%"></i></div></div>
+    ${plist.length?`<ul class="peaks" style="margin-top:10px">${plist.map(([n,p],i)=>`<li><b>${i+1}. ${esc(n)}</b><span>${fmtDate(p.ts)}${p.alt?'｜'+p.alt+'m':''}${p.count>1?'｜登頂 '+p.count+' 次':''}</span></li>`).join('')}</ul>`
+      :`<p class="hint" style="margin-top:8px">在山頂那一站點開編輯，勾選「百岳」標記，就會列入清單。</p>`}`;
+  $('#actionbar').innerHTML='';
 }
 
 /* ---------- export / backup ---------- */
 function csvCell(v){v=v==null?'':String(v);return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
 function tripRows(t){
   const c=calc(t,Date.now());
-  const L=[['序','地點','抵達','離開','休息(分)','前段行走(分)','累積經過(分)','備註']];
-  t.stations.forEach((s,i)=>{const r=c.rows[i];L.push([i+1,s.name,fmtFull(s.arr),fmtFull(s.dep),r.ongoing?'':mins(r.rest),mins(r.leg),mins(r.cum),s.note])});
+  const L=[['序','地點','抵達','離開','休息(分)','前段行走(分)','累積經過(分)','海拔(m)','緯度','經度','天氣','隊員體力','標記','備註']];
+  t.stations.forEach((s,i)=>{const r=c.rows[i];L.push([i+1,s.name,fmtFull(s.arr),fmtFull(s.dep),r.ongoing?'':mins(r.rest),mins(r.leg),mins(r.cum),s.alt??'',s.lat??'',s.lon??'',s.weather||'',s.team||'',(s.tags||[]).join('、'),s.note])});
+  if(t.marks.length){L.push([]);L.push(['標記','類型','時間','','','','','海拔(m)','緯度','經度','','','','備註']);
+    [...t.marks].sort((a,b)=>a.ts-b.ts).forEach((m,i)=>L.push(['M'+(i+1),m.tag,fmtFull(m.ts),'','','','',m.alt??'',m.lat??'',m.lon??'','','','',m.note]))}
   L.push([]);L.push(['行程',t.name]);L.push(['類型',t.type]);
   L.push(['累積經過',fmtDur(c.elapsed)]);L.push(['實際行走',fmtDur(c.walk)]);L.push(['累積休息',fmtDur(c.rest)]);
+  if(c.hasAlt){L.push(['爬升(m)',c.up]);L.push(['下降(m)',c.down])}
   return L;
 }
 async function shareOrDownload(name,text,mime){
@@ -402,9 +681,13 @@ async function shareOrDownload(name,text,mime){
   try{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();
     setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);showToast('已產生 '+name+'；若沒有下載，請改用「複製」')}catch(e){showToast('無法下載，請改用「複製」')}
 }
+async function shareText(title,text){
+  try{if(navigator.share){await navigator.share({title,text});return}}catch(e){if(e&&e.name==='AbortError')return}
+  copyText(text,'已複製報告，可貼到 LINE 或筆記');
+}
 async function copyText(text,okMsg){
   try{await navigator.clipboard.writeText(text);showToast(okMsg)}
-  catch(e){openSheet(`<h2>手動複製</h2><p class="hint">長按下方文字全選後複製。</p><textarea id="f-copy" style="min-height:220px;width:100%;box-sizing:border-box;font-family:var(--mono);font-size:13px">${esc(text)}</textarea><button class="primary" data-act="closesheet-btn">完成</button>`,
+  catch(e){openSheet(`<h2>手動複製</h2><p class="hint">長按下方文字全選後複製。</p><textarea id="f-copy" style="min-height:220px;width:100%;box-sizing:border-box;font-family:var(--mono);font-size:13px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:10px">${esc(text)}</textarea><button class="primary" data-act="closesheet-btn">完成</button>`,
     el=>{const ta=el.querySelector('#f-copy');ta.focus();ta.select()})}
 }
 const safeName=s=>s.replace(/[\\/:*?"<>|]/g,'_');
@@ -416,12 +699,10 @@ function showToast(msg,actions=[]){
   $('#toasthost').onclick=e=>{const b=e.target.closest('[data-toast]');if(!b)return;const a=actions[+b.dataset.toast];$('#toasthost').innerHTML='';a&&a.fn()};
   toastTimer=setTimeout(()=>{$('#toasthost').innerHTML=''},actions.length?7000:2500);
 }
-
-/* two-tap confirmation, since confirm() dialogs are unreliable in installed web apps */
 function confirmTap(btn,key,label){
   if(armed===key){armed=null;return true}
   armed=key;btn.classList.add('armed');btn.textContent=label;
-  setTimeout(()=>{if(armed===key){armed=null;btn.classList.remove('armed');btn.textContent=btn.dataset.orig||btn.textContent}},4000);
+  setTimeout(()=>{if(armed===key){armed=null;btn.classList.remove('armed');btn.textContent=btn.dataset.orig}},4000);
   return false;
 }
 
@@ -430,25 +711,41 @@ document.addEventListener('click',e=>{
   const el=e.target.closest('[data-act]'); if(!el)return;
   const act=el.dataset.act;
   if(act==='closesheet'&&e.target!==el)return;
+  if(act==='cmp')return;
   if(!el.dataset.orig)el.dataset.orig=el.textContent;
   switch(act){
     case 'newtrip':return openNewTrip();
     case 'createtrip':return createTrip();
-    case 'open':view={name:'trip',id:el.dataset.id};window.scrollTo(0,0);return render();
-    case 'back':view={name:'list',id:null};window.scrollTo(0,0);return render();
+    case 'open':return go({name:'trip',id:el.dataset.id});
+    case 'back':return go({name:'list',id:null});
+    case 'backtrip':return go({name:'trip',id:view.id});
+    case 'stats':return go({name:'stats',id:null});
+    case 'report':closeSheet();return go({name:'report',id:view.id});
+    case 'display':return openDisplay();
+    case 'setting':{const k=el.dataset.key;settings[k]=!settings[k];saveSettings();el.setAttribute('aria-pressed',settings[k]);el.textContent=settings[k]?'開':'關';
+      if(k==='gps'&&settings.gps&&navigator.geolocation){try{navigator.geolocation.getCurrentPosition(()=>{},()=>{},{timeout:5000})}catch(err){}}return}
     case 'start':case 'arrive':case 'depart':return record(act);
+    case 'markmenu':return openMarkMenu();
+    case 'addmark':return addMark(el.dataset.tag);
+    case 'editmark':return openMark(el.dataset.id);
+    case 'savemark':return saveMark(el.dataset.id);
+    case 'delmark':if(confirmTap(el,'delmark','再按一次確認刪除')){const t=trip();t.marks=t.marks.filter(m=>m.id!==el.dataset.id);save();closeSheet();render();showToast('已刪除標記')}return;
+    case 'regeo':{const t=trip();showToast('定位中…');return grabGeo(t.id,el.dataset.kind,el.dataset.ref,false)}
     case 'endtrip':if(confirmTap(el,'end','再按一次確認結束'))endTrip();return;
-    case 'reopen':{const t=trip();t.ended=null;save();closeSheet();render();return showToast('行程已重新開啟')}
+    case 'reopen':{const t=trip();t.ended=null;save();closeSheet();go({name:'trip',id:t.id});return showToast('行程已重新開啟')}
     case 'edit':return openStation(+el.dataset.i);
     case 'savestation':return saveStation(+el.dataset.i);
     case 'delstation':if(confirmTap(el,'delst','再按一次確認刪除')){trip().stations.splice(+el.dataset.i,1);save();closeSheet();render();showToast('已刪除此站')}return;
     case 'quick':$('#f-sname').value=el.textContent;return;
     case 'setnow':$('#'+el.dataset.for).value=toInput(Date.now());return;
     case 'clear':$('#'+el.dataset.for).value='';return;
-    case 'pick':el.parentNode.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',c===el));return;
+    case 'pick':{const box=el.parentNode;if(box.dataset.multi==='1'){el.setAttribute('aria-pressed',el.getAttribute('aria-pressed')!=='true')}
+      else{const was=el.getAttribute('aria-pressed')==='true';box.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed','false'));
+        if(!was||box.id==='typechips'||box.id==='mtag')el.setAttribute('aria-pressed','true')}return}
     case 'tripmenu':return openTripMenu();
     case 'savetrip':return saveTrip();
-    case 'deltrip':if(confirmTap(el,'deltrip','再按一次確認刪除整個行程')){db.trips=db.trips.filter(x=>x.id!==view.id);save();closeSheet();view={name:'list',id:null};render();showToast('行程已刪除')}return;
+    case 'deltrip':if(confirmTap(el,'deltrip','再按一次確認刪除整個行程')){db.trips=db.trips.filter(x=>x.id!==view.id);save();closeSheet();go({name:'list',id:null});showToast('行程已刪除')}return;
+    case 'sharereport':{const t=trip();return shareText(t.name,reportText(t))}
     case 'csvfile':{const t=trip();return shareOrDownload(safeName(t.name)+'.csv','﻿'+tripRows(t).map(r=>r.map(csvCell).join(',')).join('\r\n'),'text/csv')}
     case 'csvcopy':{const t=trip();return copyText(tripRows(t).map(r=>r.join('\t')).join('\n'),'已複製，可直接貼到試算表')}
     case 'backup':{const d=new Date();return shareOrDownload('登山行程備份_'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'.json',JSON.stringify(db,null,1),'application/json')}
@@ -456,28 +753,28 @@ document.addEventListener('click',e=>{
     case 'closesheet':case 'closesheet-btn':return closeSheet();
   }
 });
+document.addEventListener('change',e=>{if(e.target.id==='f-cmp'){cmpChoice[view.id]=e.target.value;const y=window.scrollY;renderReport();window.scrollTo(0,y)}});
 $('#restorefile').addEventListener('change',e=>{
   const f=e.target.files[0]; if(!f)return;
   const rd=new FileReader();
   rd.onload=()=>{try{const d=JSON.parse(rd.result);if(!d||!Array.isArray(d.trips))throw 0;
     let n=0;d.trips.forEach(t=>{if(!t.id||!Array.isArray(t.stations))return;const i=db.trips.findIndex(x=>x.id===t.id);i>=0?db.trips[i]=t:db.trips.push(t);n++});
-    save();render();showToast('已還原 '+n+' 筆行程')}catch(err){showToast('這個檔案不是有效的行程備份')}
+    normalize();save();render();showToast('已還原 '+n+' 筆行程')}catch(err){showToast('這個檔案不是有效的行程備份')}
     e.target.value=''};
   rd.readAsText(f);
 });
 
 /* live clock + stats while a trip is running */
 setInterval(()=>{
-  if(view.name!=='trip')return; const t=trip(); if(!t||t.ended||!t.stations.length&&!$('#clock'))return;
+  if(view.name!=='trip')return; const t=trip(); if(!t||t.ended)return;
   const ck=$('#clock'); const d=new Date(); if(ck)ck.textContent=pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
   if(d.getSeconds()===0&&!$('#sheethost').innerHTML&&t.stations.length){const y=window.scrollY;renderTrip();window.scrollTo(0,y)}
 },1000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('#sheethost').innerHTML)render()});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('#sheethost').innerHTML){const y=window.scrollY;render();window.scrollTo(0,y)}});
 
-/* offline support when installed from its own site */
 try{if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}
 
-window.__hikelog={calc,fmtDur};
+window.__hikelog={calc,fmtDur,legMap,compareCandidates,reportText,get db(){return db}};
 render();
 })();
 </script>
