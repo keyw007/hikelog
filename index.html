@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="zh-Hant"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e1311">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="登山紀錄">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<title>登山行程紀錄</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: one narrow column, summary on top, vertical trail timeline, thumb-reach action bar fixed at the bottom.
+   Fonts are system faces on purpose: the app must render identically with no network. */
+:root{
+  --bg:#e9eeeb; --surface:#ffffff; --sunk:#dfe6e2; --ink:#16201b; --muted:#5a6760; --line:#cdd6d1;
+  --accent:#d94a14; --accent-ink:#ffffff; --walk:#2c6a4c; --rest:#355a85; --warn:#b42318;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono",monospace;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1311; --surface:#171f1b; --sunk:#111815; --ink:#e4ebe7; --muted:#8f9d96; --line:#283330;
+  --accent:#ff6a2b; --accent-ink:#1a0d06; --walk:#6cc298; --rest:#8fb2de; --warn:#ff8a7a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1311; --surface:#171f1b; --sunk:#111815; --ink:#e4ebe7; --muted:#8f9d96; --line:#283330;
+  --accent:#ff6a2b; --accent-ink:#1a0d06; --walk:#6cc298; --rest:#8fb2de; --warn:#ff8a7a; color-scheme:dark}
+
+html,body{min-height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.45;
+  -webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+
+.app{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 220px}
+
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);
+  display:flex;align-items:center;gap:8px;padding-block:10px;min-height:56px}
+.top h1{flex:1;min-width:0;margin:0;font-size:20px;font-weight:700;text-wrap:balance;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.iconbtn{min-width:48px;height:48px;border-radius:12px;display:grid;place-items:center;font-size:15px;
+  color:var(--ink);background:var(--surface);border:1px solid var(--line);padding:0 12px;white-space:nowrap}
+.eyebrow{font-size:12px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+
+/* list */
+.newtrip{width:100%;height:64px;border-radius:var(--r);background:var(--ink);color:var(--bg);font-size:18px;font-weight:700;margin-block:6px 18px}
+.trips{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.trip{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;width:100%;text-align:left;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;min-height:76px}
+.trip-name{font-weight:700;font-size:17px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trip-meta{grid-column:1;color:var(--muted);font-size:13px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.trip-dur{grid-row:1/3;grid-column:2;text-align:right;font-size:22px}
+.trip-dur small{display:block;font-family:var(--sans);font-size:11px;color:var(--muted);letter-spacing:.06em}
+.pill{display:inline-block;font-size:12px;padding:2px 8px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+.pill.live{border-color:var(--accent);color:var(--accent);font-weight:700}
+.tools{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap}
+.tools .iconbtn{flex:1}
+.empty{color:var(--muted);text-align:center;padding:36px 8px;border:1px dashed var(--line);border-radius:var(--r)}
+
+/* summary */
+.status{display:flex;align-items:center;gap:10px;font-size:15px;margin-block:2px 10px;min-height:28px}
+.status .dotlive{width:10px;height:10px;border-radius:50%;background:var(--accent);flex:none;animation:pulse 1.6s infinite}
+.status.rest .dotlive{background:var(--rest)}
+.status.done .dotlive{background:var(--muted);animation:none}
+@keyframes pulse{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.status .dotlive{animation:none}}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.stat{background:var(--surface);padding:12px 14px}
+.stat b{display:block;font-size:30px;font-weight:600;line-height:1.1}
+.stat span{font-size:13px;color:var(--muted)}
+.stat.walk b{color:var(--walk)} .stat.rest b{color:var(--rest)}
+.bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--sunk);margin-top:10px}
+.bar i{display:block;height:100%} .bar .w{background:var(--walk)} .bar .r{background:var(--rest)}
+
+/* timeline */
+.tl{list-style:none;margin:20px 0 0;padding:0 0 0 22px;position:relative}
+.tl::before{content:"";position:absolute;left:7px;top:14px;bottom:14px;width:2px;background:var(--line)}
+.stop{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;width:100%;text-align:left;
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-height:64px}
+.stop::before{content:"";position:absolute;left:-21px;top:20px;width:12px;height:12px;border-radius:50%;
+  background:var(--surface);border:3px solid var(--walk)}
+.stop.now{border-color:var(--rest)} .stop.now::before{border-color:var(--rest);background:var(--rest)}
+.stop.first::before,.stop.last::before{border-radius:3px}
+.stop-name{font-weight:700;font-size:17px;overflow-wrap:anywhere}
+.stop-name.unnamed{color:var(--muted);font-weight:500}
+.stop-note{grid-column:1;font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.stop-times{grid-row:1/3;grid-column:2;text-align:right;font-size:14px;line-height:1.5}
+.stop-times .k{font-family:var(--sans);font-size:11px;color:var(--muted);margin-right:4px}
+.stop-rest{grid-column:1/3;display:flex;gap:10px;align-items:center;font-size:13px;color:var(--rest)}
+.stop-rest .num{font-weight:600}
+.warn{color:var(--warn);font-weight:700}
+.leg{display:flex;align-items:center;gap:8px;padding:8px 0 8px 4px;font-size:13px;color:var(--walk)}
+.leg .num{font-weight:600;font-size:14px}
+.leg .cum{margin-left:auto;color:var(--muted)}
+
+/* action bar */
+.action{position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--bg);border-top:1px solid var(--line);
+  padding-top:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.action-in{max-width:640px;margin:0 auto;display:grid;gap:10px}
+.big{width:100%;min-height:84px;border-radius:18px;font-size:24px;font-weight:800;letter-spacing:.04em;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  background:var(--accent);color:var(--accent-ink);box-shadow:0 2px 0 rgba(0,0,0,.15)}
+.big:active{transform:translateY(1px)}
+.big.depart{background:var(--rest);color:var(--surface)}
+.big small{font-family:var(--mono);font-size:14px;font-weight:500;opacity:.9;letter-spacing:0}
+.subrow{display:flex;gap:10px}
+.ghost{flex:1;min-height:48px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-size:15px}
+.ghost.danger{color:var(--warn)}
+.ghost.armed{background:var(--warn);color:var(--surface);border-color:var(--warn)}
+
+/* sheet */
+.scrim{position:fixed;inset:0;z-index:40;background:rgba(10,15,12,.45);display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:640px;max-height:92%;overflow:auto;background:var(--surface);border-radius:20px 20px 0 0;
+  padding-top:18px;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));
+  padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));display:grid;gap:14px}
+.sheet h2{margin:0;font-size:19px}
+.field{display:grid;gap:6px}
+.field label{font-size:13px;color:var(--muted)}
+.field input,.field textarea,.field select{width:100%;box-sizing:border-box;min-height:50px;border-radius:12px;border:1px solid var(--line);
+  background:var(--bg);padding:10px 12px;font-size:17px}
+.field textarea{min-height:76px;resize:vertical}
+.timefield{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px}
+.timefield input{min-width:0}
+.mini{min-height:50px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:40px;padding:0 14px;border-radius:99px;border:1px solid var(--line);background:var(--bg);font-size:15px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.row2{display:flex;gap:10px}
+.row2>*{flex:1}
+.primary{min-height:54px;border-radius:12px;background:var(--ink);color:var(--bg);font-weight:700;font-size:17px}
+.hint{font-size:13px;color:var(--muted);margin:0}
+
+/* toast */
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(150px + env(safe-area-inset-bottom,0px));z-index:50;
+  width:min(560px,calc(100% - 32px));background:var(--ink);color:var(--bg);border-radius:14px;padding:10px 10px 10px 16px;
+  display:flex;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.toast p{flex:1;margin:0;font-size:15px}
+.toast button{min-height:42px;padding:0 12px;border-radius:10px;color:var(--bg);border:1px solid color-mix(in srgb,var(--bg) 40%,transparent);font-size:14px}
+</style>
+</head><body>
+
+
+<div class="app" id="app"></div>
+<div id="actionbar"></div>
+<div id="sheethost"></div>
+<div id="toasthost"></div>
+<input type="file" id="restorefile" accept="application/json,.json" hidden>
+
+<script>
+(function(){
+'use strict';
+const KEY='hikelog.v1';
+const TYPES=['一般登山','百岳','日本登山','長程健行','其他'];
+const QUICK=['登山口','山屋','營地','三角點','山頂','鞍部','岔路','水源','休息點','停車場'];
+const $=s=>document.querySelector(s);
+const pad=n=>String(n).padStart(2,'0');
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+
+let db=load()||seed();
+let view={name:'list',id:null};
+let armed=null, toastTimer=null;
+
+/* ---------- storage (local first; a sync layer can wrap save/load later) ---------- */
+function load(){try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);if(d&&Array.isArray(d.trips))return d}}catch(e){}return null}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){showToast('無法儲存：此瀏覽器封鎖了本機儲存空間')}}
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+
+function seed(){
+  const d=(h,m)=>new Date(2026,9,18,h,m).getTime();
+  const st=(name,arr,dep,note='')=>({id:uid(),name,note,arr,dep});
+  return {trips:[{id:uid(),name:'範例｜雪山主東峰單攻',type:'百岳',note:'範例資料，看完可在「⋯」刪除',created:d(5,50),ended:d(17,20),stations:[
+    st('雪山登山口',null,d(6,10),'登山口服務站報到'),
+    st('七卡山莊',d(6,55),d(7,5),'補水'),
+    st('哭坡觀景台',d(8,10),d(8,20)),
+    st('雪山東峰',d(9,5),d(9,25)),
+    st('三六九山莊',d(10,15),d(10,55),'午餐、加衣'),
+    st('雪山主峰',d(12,50),d(13,20),'3886m 一等三角點'),
+    st('三六九山莊',d(14,45),d(15,0)),
+    st('雪山登山口',d(17,20),null)
+  ]}]};
+}
+
+/* ---------- time helpers ---------- */
+function fmtDur(ms){if(ms==null||isNaN(ms))return '—';const neg=ms<0;let m=Math.round(Math.abs(ms)/60000);return (neg?'-':'')+Math.floor(m/60)+':'+pad(m%60)}
+function dayIndex(ts,base){const a=new Date(ts);a.setHours(0,0,0,0);const b=new Date(base);b.setHours(0,0,0,0);return Math.round((a-b)/864e5)}
+function fmtTime(ts,base){if(ts==null)return '—';const d=new Date(ts);const t=pad(d.getHours())+':'+pad(d.getMinutes());
+  if(base!=null){const k=dayIndex(ts,base);if(k!==0)return 'D'+(k+1)+' '+t}return t}
+function fmtDate(ts){const d=new Date(ts);return d.getFullYear()+'/'+pad(d.getMonth()+1)+'/'+pad(d.getDate())}
+function fmtFull(ts){if(ts==null)return '';const d=new Date(ts);return fmtDate(ts).replace(/\//g,'-')+' '+pad(d.getHours())+':'+pad(d.getMinutes())}
+function toInput(ts){if(ts==null)return '';const d=new Date(ts);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())}
+function fromInput(v){if(!v)return null;const t=new Date(v).getTime();return isNaN(t)?null:t}
+const mins=ms=>ms==null?'':Math.round(ms/60000);
+
+/* ---------- core calculation ---------- */
+function calc(t,now){
+  const S=t.stations, active=!t.ended&&S.length>0;
+  const out={rows:[],elapsed:0,rest:0,walk:0,start:null,active,state:'idle'};
+  if(!S.length)return out;
+  const start=S[0].dep??S[0].arr; out.start=start;
+  let last=start??0;
+  S.forEach((s,i)=>{
+    const r={rest:null,leg:null,ongoing:false,warn:false,cum:null};
+    if(s.arr!=null&&s.dep!=null){r.rest=s.dep-s.arr;if(r.rest<0)r.warn=true}
+    if(i>0){const p=S[i-1];if(p.dep!=null&&s.arr!=null){r.leg=s.arr-p.dep;if(r.leg<0)r.warn=true}}
+    if(i===S.length-1&&active&&s.arr!=null&&s.dep==null){r.rest=Math.max(0,now-s.arr);r.ongoing=true}
+    if(s.arr!=null&&start!=null)r.cum=s.arr-start;
+    [s.arr,s.dep].forEach(v=>{if(v!=null&&v>last)last=v});
+    if(r.rest>0)out.rest+=r.rest;
+    out.rows.push(r);
+  });
+  const end=active?Math.max(now,last):last;
+  out.elapsed=start!=null?Math.max(0,end-start):0;
+  out.walk=Math.max(0,out.elapsed-out.rest);
+  const l=S[S.length-1];
+  out.state=t.ended?'done':(l.arr!=null&&l.dep==null)?'rest':'walk';
+  return out;
+}
+function nextAction(t){if(t.ended)return null;const S=t.stations;if(!S.length)return 'start';const l=S[S.length-1];return (l.arr!=null&&l.dep==null)?'depart':'arrive'}
+const trip=()=>db.trips.find(x=>x.id===view.id);
+
+/* ---------- render ---------- */
+function render(){armed=null;view.name==='trip'&&trip()?renderTrip():renderList()}
+
+function renderList(){
+  view={name:'list',id:null};
+  const now=Date.now();
+  const trips=[...db.trips].sort((a,b)=>(b.created||0)-(a.created||0));
+  $('#app').innerHTML=`
+    <header class="top"><h1>登山行程紀錄</h1><span class="eyebrow">${trips.length} 筆</span></header>
+    <button class="newtrip" data-act="newtrip" id="btn-newtrip">＋ 新增行程</button>
+    ${trips.length?`<ul class="trips">${trips.map(t=>{const c=calc(t,now);return `<li><button class="trip" data-act="open" data-id="${t.id}">
+      <span class="trip-name">${esc(t.name)}</span>
+      <span class="trip-dur num">${fmtDur(c.elapsed)}<small>累積經過</small></span>
+      <span class="trip-meta">${t.ended?'':'<span class="pill live">進行中</span>'}<span class="pill">${esc(t.type||'一般登山')}</span>
+        <span class="num">${fmtDate(c.start??t.created)}</span><span>${t.stations.length} 站</span></span></button></li>`}).join('')}</ul>`
+    :`<p class="empty">還沒有行程。按「新增行程」開始第一筆紀錄。</p>`}
+    <div class="tools">
+      <button class="iconbtn" data-act="backup" id="btn-backup">備份全部（JSON）</button>
+      <button class="iconbtn" data-act="restore" id="btn-restore">從備份還原</button>
+    </div>
+    <p class="hint" style="margin-top:14px">資料存在這支手機上，離線也能使用。換手機前請先備份。</p>`;
+  $('#actionbar').innerHTML='';
+}
+
+function renderTrip(){
+  const t=trip(); if(!t)return renderList();
+  const now=Date.now(), c=calc(t,now), S=t.stations;
+  let statusText='尚未出發', cls='';
+  if(c.state==='walk'){const l=S[S.length-1];statusText=`行走中 · 離開 ${esc(l.name)} <span class="num">${fmtDur(now-(l.dep??l.arr))}</span>`}
+  if(c.state==='rest'){const l=S[S.length-1];cls='rest';statusText=`休息中 · ${esc(l.name)} <span class="num">${fmtDur(now-l.arr)}</span>`}
+  if(c.state==='done'){cls='done';statusText=`已結束 · ${fmtDate(c.start??t.created)}`}
+  const tot=c.walk+c.rest||1;
+  let rows='';
+  S.forEach((s,i)=>{
+    const r=c.rows[i];
+    if(i>0)rows+=`<li class="leg"><span>行走</span><span class="num ${r.leg!=null&&r.leg<0?'warn':''}">${fmtDur(r.leg)}</span>${r.cum!=null?`<span class="cum">累積 <span class="num">${fmtDur(r.cum)}</span></span>`:''}</li>`;
+    const unnamed=/^第\d+站$/.test(s.name);
+    rows+=`<li><button class="stop ${i===0?'first':''} ${i===S.length-1&&t.ended?'last':''} ${r.ongoing?'now':''}" data-act="edit" data-i="${i}">
+      <span class="stop-name ${unnamed?'unnamed':''}">${esc(s.name)}${unnamed?'（點此命名）':''}</span>
+      <span class="stop-times num">${s.arr!=null?`<div><span class="k">抵</span>${fmtTime(s.arr,c.start)}</div>`:''}${s.dep!=null?`<div><span class="k">離</span>${fmtTime(s.dep,c.start)}</div>`:''}</span>
+      ${s.note?`<span class="stop-note">${esc(s.note)}</span>`:''}
+      ${r.rest!=null?`<span class="stop-rest">${r.ongoing?'休息中':'休息'} <span class="num ${r.warn?'warn':''}">${fmtDur(r.rest)}</span>${r.warn?'<span class="warn">時間順序有誤</span>':''}</span>`:''}
+    </button></li>`;
+  });
+  $('#app').innerHTML=`
+    <header class="top"><button class="iconbtn" data-act="back" aria-label="回行程列表">‹ 行程</button>
+      <h1>${esc(t.name)}</h1><button class="iconbtn" data-act="tripmenu" aria-label="行程設定">⋯</button></header>
+    <div class="status ${cls}"><span class="dotlive"></span><span>${statusText}</span></div>
+    <section class="stats" aria-label="時間統計">
+      <div class="stat"><b class="num">${fmtDur(c.elapsed)}</b><span>累積經過</span></div>
+      <div class="stat walk"><b class="num">${fmtDur(c.walk)}</b><span>實際行走</span></div>
+      <div class="stat rest"><b class="num">${fmtDur(c.rest)}</b><span>累積休息</span></div>
+      <div class="stat"><b class="num">${S.filter(s=>s.arr!=null).length}</b><span>抵達站數</span></div>
+    </section>
+    <div class="bar" aria-hidden="true"><i class="w" style="width:${c.walk/tot*100}%"></i><i class="r" style="width:${c.rest/tot*100}%"></i></div>
+    ${S.length?`<ol class="tl">${rows}</ol>`:`<p class="empty" style="margin-top:20px">在登山口按下「記錄出發」，就會開始計時。</p>`}
+    ${t.note?`<p class="hint" style="margin-top:16px">${esc(t.note)}</p>`:''}`;
+  renderAction(t);
+}
+
+function renderAction(t){
+  const a=nextAction(t), now=new Date(), clock=pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
+  if(!a){$('#actionbar').innerHTML=`<div class="action"><div class="action-in"><button class="ghost" data-act="reopen">重新開啟這個行程</button></div></div>`;return}
+  const label={start:'記錄出發',arrive:'記錄抵達',depart:'記錄離開'}[a];
+  $('#actionbar').innerHTML=`<div class="action"><div class="action-in">
+    <button class="big ${a==='depart'?'depart':''}" data-act="${a}" id="btn-main">${label}<small id="clock">${clock}</small></button>
+    ${t.stations.length?`<div class="subrow"><button class="ghost" data-act="endtrip" id="btn-end">結束行程</button></div>`:''}
+  </div></div>`;
+}
+
+/* ---------- actions ---------- */
+function snapshot(t){return JSON.stringify(t)}
+function restoreSnap(s){const o=JSON.parse(s);const i=db.trips.findIndex(x=>x.id===o.id);if(i>=0)db.trips[i]=o;save();render()}
+
+function record(kind){
+  const t=trip(); if(!t)return;
+  const snap=snapshot(t), now=Date.now(), S=t.stations;
+  if(kind==='start')S.push({id:uid(),name:'登山口',note:'',arr:null,dep:now});
+  if(kind==='arrive')S.push({id:uid(),name:'第'+S.length+'站',note:'',arr:now,dep:null});
+  if(kind==='depart')S[S.length-1].dep=now;
+  save(); render();
+  try{navigator.vibrate&&navigator.vibrate(30)}catch(e){}
+  const idx=S.length-1;
+  const msg={start:'已記錄出發',arrive:'已記錄抵達',depart:'已記錄離開'}[kind]+' '+fmtTime(now);
+  showToast(msg,[
+    ...(kind!=='depart'?[{label:'命名',fn:()=>openStation(idx)}]:[]),
+    {label:'復原',fn:()=>{restoreSnap(snap);showToast('已復原')}}
+  ]);
+}
+
+function endTrip(){
+  const t=trip(); const snap=snapshot(t), now=Date.now(), S=t.stations, l=S[S.length-1];
+  if(l.dep!=null)S.push({id:uid(),name:'終點',note:'',arr:now,dep:null});
+  t.ended=Math.max(now,l.arr||0); save(); render();
+  showToast('行程已結束',[{label:'復原',fn:()=>{restoreSnap(snap);showToast('已復原')}}]);
+}
+
+/* ---------- sheets ---------- */
+function openSheet(html,onMount){
+  $('#sheethost').innerHTML=`<div class="scrim" data-act="closesheet"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
+  onMount&&onMount($('#sheethost .sheet'));
+}
+function closeSheet(){$('#sheethost').innerHTML=''}
+
+function typeChips(sel){return `<div class="chips" id="typechips">${TYPES.map(x=>`<button type="button" class="chip" data-act="pick" aria-pressed="${x===sel}">${x}</button>`).join('')}</div>`}
+
+function openNewTrip(){
+  openSheet(`<h2>新增行程</h2>
+    <div class="field"><label for="f-name">行程名稱</label><input id="f-name" placeholder="例：嘉明湖三天兩夜" autocomplete="off"></div>
+    <div class="field"><label>類型</label>${typeChips('一般登山')}</div>
+    <div class="field"><label for="f-note">備註</label><textarea id="f-note" placeholder="隊員、路線、天氣…"></textarea></div>
+    <div class="row2"><button class="ghost" data-act="closesheet-btn">取消</button><button class="primary" data-act="createtrip" id="btn-create">建立</button></div>`);
+}
+function createTrip(){
+  const name=$('#f-name').value.trim()||('行程 '+fmtDate(Date.now()));
+  const type=($('#typechips [aria-pressed="true"]')||{}).textContent||'一般登山';
+  const t={id:uid(),name,type,note:$('#f-note').value.trim(),created:Date.now(),ended:null,stations:[]};
+  db.trips.push(t); save(); closeSheet(); view={name:'trip',id:t.id}; render();
+}
+
+function openTripMenu(){
+  const t=trip();
+  openSheet(`<h2>行程設定</h2>
+    <div class="field"><label for="f-name">行程名稱</label><input id="f-name" value="${esc(t.name)}" autocomplete="off"></div>
+    <div class="field"><label>類型</label>${typeChips(t.type)}</div>
+    <div class="field"><label for="f-note">備註</label><textarea id="f-note">${esc(t.note)}</textarea></div>
+    <button class="primary" data-act="savetrip">儲存</button>
+    <div class="field"><label>匯出（可貼到 Excel、Google 試算表、Notion）</label>
+      <div class="row2"><button class="ghost" data-act="csvfile">分享／下載 CSV</button><button class="ghost" data-act="csvcopy">複製表格</button></div></div>
+    ${t.ended?`<button class="ghost" data-act="reopen">重新開啟行程</button>`:''}
+    <button class="ghost danger" data-act="deltrip" id="btn-del">刪除此行程</button>`);
+}
+function saveTrip(){
+  const t=trip(); t.name=$('#f-name').value.trim()||t.name; t.note=$('#f-note').value.trim();
+  t.type=($('#typechips [aria-pressed="true"]')||{}).textContent||t.type; save(); closeSheet(); render(); showToast('已儲存');
+}
+
+function openStation(i){
+  const t=trip(), s=t.stations[i]; if(!s)return;
+  const unnamed=/^第\d+站$/.test(s.name);
+  openSheet(`<h2>第 ${i+1} 站</h2>
+    <div class="field"><label for="f-sname">地點名稱</label><input id="f-sname" value="${unnamed?'':esc(s.name)}" placeholder="${esc(s.name)}" autocomplete="off"></div>
+    <div class="chips">${QUICK.map(q=>`<button type="button" class="chip" data-act="quick">${q}</button>`).join('')}</div>
+    <div class="field"><label for="f-arr">抵達時間</label><div class="timefield">
+      <input type="datetime-local" id="f-arr" value="${toInput(s.arr)}"><button type="button" class="mini" data-act="setnow" data-for="f-arr">現在</button><button type="button" class="mini" data-act="clear" data-for="f-arr">清除</button></div></div>
+    <div class="field"><label for="f-dep">離開時間</label><div class="timefield">
+      <input type="datetime-local" id="f-dep" value="${toInput(s.dep)}"><button type="button" class="mini" data-act="setnow" data-for="f-dep">現在</button><button type="button" class="mini" data-act="clear" data-for="f-dep">清除</button></div></div>
+    <div class="field"><label for="f-snote">備註</label><textarea id="f-snote" placeholder="天氣、水源、路況、隊員狀況…">${esc(s.note)}</textarea></div>
+    <div class="row2"><button class="ghost danger" data-act="delstation" data-i="${i}" id="btn-delst">刪除此站</button><button class="primary" data-act="savestation" data-i="${i}">完成</button></div>`);
+}
+function saveStation(i){
+  const t=trip(), s=t.stations[i];
+  const n=$('#f-sname').value.trim(); if(n)s.name=n;
+  s.arr=fromInput($('#f-arr').value); s.dep=fromInput($('#f-dep').value); s.note=$('#f-snote').value.trim();
+  save(); closeSheet(); render();
+}
+
+/* ---------- export / backup ---------- */
+function csvCell(v){v=v==null?'':String(v);return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
+function tripRows(t){
+  const c=calc(t,Date.now());
+  const L=[['序','地點','抵達','離開','休息(分)','前段行走(分)','累積經過(分)','備註']];
+  t.stations.forEach((s,i)=>{const r=c.rows[i];L.push([i+1,s.name,fmtFull(s.arr),fmtFull(s.dep),r.ongoing?'':mins(r.rest),mins(r.leg),mins(r.cum),s.note])});
+  L.push([]);L.push(['行程',t.name]);L.push(['類型',t.type]);
+  L.push(['累積經過',fmtDur(c.elapsed)]);L.push(['實際行走',fmtDur(c.walk)]);L.push(['累積休息',fmtDur(c.rest)]);
+  return L;
+}
+async function shareOrDownload(name,text,mime){
+  const blob=new Blob([text],{type:mime});
+  try{const f=new File([blob],name,{type:mime});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});return}}catch(e){if(e&&e.name==='AbortError')return}
+  try{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);showToast('已產生 '+name+'；若沒有下載，請改用「複製」')}catch(e){showToast('無法下載，請改用「複製」')}
+}
+async function copyText(text,okMsg){
+  try{await navigator.clipboard.writeText(text);showToast(okMsg)}
+  catch(e){openSheet(`<h2>手動複製</h2><p class="hint">長按下方文字全選後複製。</p><textarea id="f-copy" style="min-height:220px;width:100%;box-sizing:border-box;font-family:var(--mono);font-size:13px">${esc(text)}</textarea><button class="primary" data-act="closesheet-btn">完成</button>`,
+    el=>{const ta=el.querySelector('#f-copy');ta.focus();ta.select()})}
+}
+const safeName=s=>s.replace(/[\\/:*?"<>|]/g,'_');
+
+/* ---------- toast ---------- */
+function showToast(msg,actions=[]){
+  clearTimeout(toastTimer);
+  $('#toasthost').innerHTML=`<div class="toast" role="status"><p>${esc(msg)}</p>${actions.map((a,i)=>`<button data-toast="${i}">${esc(a.label)}</button>`).join('')}</div>`;
+  $('#toasthost').onclick=e=>{const b=e.target.closest('[data-toast]');if(!b)return;const a=actions[+b.dataset.toast];$('#toasthost').innerHTML='';a&&a.fn()};
+  toastTimer=setTimeout(()=>{$('#toasthost').innerHTML=''},actions.length?7000:2500);
+}
+
+/* two-tap confirmation, since confirm() dialogs are unreliable in installed web apps */
+function confirmTap(btn,key,label){
+  if(armed===key){armed=null;return true}
+  armed=key;btn.classList.add('armed');btn.textContent=label;
+  setTimeout(()=>{if(armed===key){armed=null;btn.classList.remove('armed');btn.textContent=btn.dataset.orig||btn.textContent}},4000);
+  return false;
+}
+
+/* ---------- events ---------- */
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-act]'); if(!el)return;
+  const act=el.dataset.act;
+  if(act==='closesheet'&&e.target!==el)return;
+  if(!el.dataset.orig)el.dataset.orig=el.textContent;
+  switch(act){
+    case 'newtrip':return openNewTrip();
+    case 'createtrip':return createTrip();
+    case 'open':view={name:'trip',id:el.dataset.id};window.scrollTo(0,0);return render();
+    case 'back':view={name:'list',id:null};window.scrollTo(0,0);return render();
+    case 'start':case 'arrive':case 'depart':return record(act);
+    case 'endtrip':if(confirmTap(el,'end','再按一次確認結束'))endTrip();return;
+    case 'reopen':{const t=trip();t.ended=null;save();closeSheet();render();return showToast('行程已重新開啟')}
+    case 'edit':return openStation(+el.dataset.i);
+    case 'savestation':return saveStation(+el.dataset.i);
+    case 'delstation':if(confirmTap(el,'delst','再按一次確認刪除')){trip().stations.splice(+el.dataset.i,1);save();closeSheet();render();showToast('已刪除此站')}return;
+    case 'quick':$('#f-sname').value=el.textContent;return;
+    case 'setnow':$('#'+el.dataset.for).value=toInput(Date.now());return;
+    case 'clear':$('#'+el.dataset.for).value='';return;
+    case 'pick':el.parentNode.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',c===el));return;
+    case 'tripmenu':return openTripMenu();
+    case 'savetrip':return saveTrip();
+    case 'deltrip':if(confirmTap(el,'deltrip','再按一次確認刪除整個行程')){db.trips=db.trips.filter(x=>x.id!==view.id);save();closeSheet();view={name:'list',id:null};render();showToast('行程已刪除')}return;
+    case 'csvfile':{const t=trip();return shareOrDownload(safeName(t.name)+'.csv','﻿'+tripRows(t).map(r=>r.map(csvCell).join(',')).join('\r\n'),'text/csv')}
+    case 'csvcopy':{const t=trip();return copyText(tripRows(t).map(r=>r.join('\t')).join('\n'),'已複製，可直接貼到試算表')}
+    case 'backup':{const d=new Date();return shareOrDownload('登山行程備份_'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'.json',JSON.stringify(db,null,1),'application/json')}
+    case 'restore':return $('#restorefile').click();
+    case 'closesheet':case 'closesheet-btn':return closeSheet();
+  }
+});
+$('#restorefile').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{try{const d=JSON.parse(rd.result);if(!d||!Array.isArray(d.trips))throw 0;
+    let n=0;d.trips.forEach(t=>{if(!t.id||!Array.isArray(t.stations))return;const i=db.trips.findIndex(x=>x.id===t.id);i>=0?db.trips[i]=t:db.trips.push(t);n++});
+    save();render();showToast('已還原 '+n+' 筆行程')}catch(err){showToast('這個檔案不是有效的行程備份')}
+    e.target.value=''};
+  rd.readAsText(f);
+});
+
+/* live clock + stats while a trip is running */
+setInterval(()=>{
+  if(view.name!=='trip')return; const t=trip(); if(!t||t.ended||!t.stations.length&&!$('#clock'))return;
+  const ck=$('#clock'); const d=new Date(); if(ck)ck.textContent=pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+  if(d.getSeconds()===0&&!$('#sheethost').innerHTML&&t.stations.length){const y=window.scrollY;renderTrip();window.scrollTo(0,y)}
+},1000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('#sheethost').innerHTML)render()});
+
+/* offline support when installed from its own site */
+try{if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}
+
+window.__hikelog={calc,fmtDur};
+render();
+})();
+</script>
+
+</body></html>
