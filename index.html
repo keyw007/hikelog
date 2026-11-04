@@ -69,6 +69,12 @@ a{color:var(--rest)}
 .pill{display:inline-block;font-size:12px;padding:2px 8px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
 .pill.live{border-color:var(--accent);color:var(--accent);font-weight:700}
 :root.night .pill.live{color:var(--ink);border-color:var(--ink)}
+.backup{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;color:var(--muted);
+  padding:8px 8px 8px 14px;border-radius:12px;border:1px solid var(--line);margin-bottom:10px}
+.backup.stale{color:var(--warn);border-color:var(--warn)}
+.backup .mini{min-height:40px;white-space:nowrap}
+.verline{display:block;margin:18px auto 0;min-height:44px;padding:0 12px;font-size:13px;color:var(--muted)}
+.cl{margin:6px 0 0;padding-left:20px;font-size:14px;display:grid;gap:4px}
 .tools{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap}
 .tools .iconbtn{flex:1}
 .empty{color:var(--muted);text-align:center;padding:36px 8px;border:1px dashed var(--line);border-radius:var(--r)}
@@ -225,6 +231,14 @@ table.rep{border-collapse:collapse;width:100%;font-size:calc(14px*var(--fz));min
 (function(){
 'use strict';
 const KEY='hikelog.v1', SKEY='hikelog.settings';
+const APP_VERSION='0.5.0';
+const CHANGELOG=[
+  ['0.5.0','2026-11-04',['版本號與更新紀錄','備份提醒：結束行程時詢問是否備份，列表頁顯示上次備份時間']],
+  ['0.4.0','2026-11-04',['百岳完整 100 座名單，依路線或排名查看','站名符合百岳時自動列入，支援常見別名','補登以前的登頂紀錄']],
+  ['0.3.0','2026-11-04',['夜間紅光模式、大字模式','按下時記錄 GPS 座標與海拔','快速標記：水源、岔路、危險地形、收訊點等','每站天氣與隊員體力','行程報告、路段比較、個人統計']],
+  ['0.2.0','2026-11-04',['休息 0 分鐘的站不顯示休息列']],
+  ['0.1.0','2026-11-04',['第一版：一鍵記錄抵達／離開、自動計算時間、離線使用、匯出 CSV、備份與還原']]
+];
 const TYPES=['一般登山','百岳','日本登山','長程健行','其他'];
 const QUICK=['登山口','山屋','營地','三角點','山頂','鞍部','岔路','水源','休息點','停車場'];
 const TAGS=['水源','岔路','危險地形','收訊點','營地','廁所','觀景','百岳'];
@@ -274,7 +288,7 @@ normalize();applySettings();
 
 /* ---------- storage ---------- */
 function load(){try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);if(d&&Array.isArray(d.trips))return d}}catch(e){}return null}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){showToast('無法儲存：此瀏覽器封鎖了本機儲存空間')}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){showToast('無法儲存：此瀏覽器封鎖了本機儲存空間')}settings.lastChange=Date.now();try{localStorage.setItem(SKEY,JSON.stringify(settings))}catch(e){}}
 function loadSettings(){try{return JSON.parse(localStorage.getItem(SKEY)||'{}')}catch(e){return {}}}
 function saveSettings(){try{localStorage.setItem(SKEY,JSON.stringify(settings))}catch(e){}applySettings()}
 function applySettings(){const r=document.documentElement;r.classList.toggle('night',!!settings.night);r.classList.toggle('large',!!settings.large)}
@@ -358,6 +372,25 @@ function render(){armed=null;
 }
 function go(v){view=v;window.scrollTo(0,0);render()}
 
+function ago(ts){const d=Math.floor((Date.now()-ts)/864e5);if(d<1){const h=Math.floor((Date.now()-ts)/36e5);return h<1?'剛剛':h+' 小時前'}return d+' 天前'}
+function backupStatus(){
+  const hasReal=db.trips.some(t=>!isExample(t)&&t.stations.length)||db.peaksManual.length;
+  if(!hasReal)return '';
+  const lb=settings.lastBackup, stale=!lb||(settings.lastChange||0)>lb&&(Date.now()-lb>7*864e5||!lb);
+  const txt=lb?'上次備份：'+ago(lb)+'（'+fmtDate(lb)+'）'+((settings.lastChange||0)>lb?'，之後有新紀錄':''):'還沒有備份過';
+  return `<div class="backup ${stale?'stale':''}"><span>${txt}</span><button class="mini" data-act="backup">立即備份</button></div>`;
+}
+function openChangelog(){
+  openSheet(`<h2>更新紀錄</h2><p class="hint">目前版本 v${APP_VERSION}。有網路時開啟 App 會自動更新；沒更新的話，把 App 完全關閉再重開。</p>
+    ${CHANGELOG.map(([v,d,items])=>`<div><b class="num">v${v}</b> <span class="hint" style="display:inline">${d}</span><ul class="cl">${items.map(i=>`<li>${esc(i)}</li>`).join('')}</ul></div>`).join('')}
+    <button class="primary" data-act="closesheet-btn">關閉</button>`);
+}
+function openBackupPrompt(){
+  openSheet(`<h2>行程已結束</h2><p class="hint">雲端同步上線前，資料只存在這支手機。建議現在備份一次：在分享選單選「儲存到檔案」→ iCloud Drive。</p>
+    <button class="primary" data-act="backup">備份到 iCloud／檔案</button>
+    <div class="row2"><button class="ghost" data-act="report">看行程報告</button><button class="ghost" data-act="closesheet-btn">稍後</button></div>`);
+}
+
 function renderList(){
   view={name:'list',id:null};
   const now=Date.now();
@@ -366,6 +399,7 @@ function renderList(){
   $('#app').innerHTML=`
     <header class="top"><h1>登山行程紀錄</h1>
       <button class="iconbtn" data-act="stats">統計</button><button class="iconbtn" data-act="display" aria-label="顯示設定">Aa</button></header>
+    ${backupStatus()}
     <button class="newtrip" data-act="newtrip">＋ 新增行程</button>
     ${trips.length?`<ul class="trips">${trips.map(t=>{const c=calc(t,now);return `<li><button class="trip" data-act="open" data-id="${t.id}">
       <span class="trip-name">${esc(t.name)}</span>
@@ -377,7 +411,8 @@ function renderList(){
       <button class="iconbtn" data-act="backup">備份全部（JSON）</button>
       <button class="iconbtn" data-act="restore">從備份還原</button>
     </div>
-    <p class="hint" style="margin-top:14px">資料存在這支手機上，離線也能使用。換手機前請先備份。</p>`;
+    <p class="hint" style="margin-top:14px">資料存在這支手機上，離線也能使用。換手機前請先備份。</p>
+    <button class="verline" data-act="changelog">v${APP_VERSION} · 更新紀錄</button>`;
   $('#actionbar').innerHTML='';
 }
 
@@ -494,7 +529,8 @@ function endTrip(){
   const t=trip(); const snap=snapshot(t), now=Date.now(), S=t.stations, l=S[S.length-1];
   if(l.dep!=null){const s={id:uid(),name:'終點',note:'',arr:now,dep:null,tags:[]};S.push(s);grabGeo(t.id,'station',s.id,true)}
   t.ended=Math.max(now,l.arr||0); save(); render();
-  showToast('行程已結束',[{label:'看報告',fn:()=>go({name:'report',id:t.id})},undoBtn(snap)]);
+  showToast('行程已結束',[undoBtn(snap)]);
+  openBackupPrompt();
 }
 
 /* ---------- sheets ---------- */
@@ -769,12 +805,12 @@ function tripRows(t){
   if(c.hasAlt){L.push(['爬升(m)',c.up]);L.push(['下降(m)',c.down])}
   return L;
 }
-async function shareOrDownload(name,text,mime){
+async function shareOrDownload(name,text,mime,onDone){
   const blob=new Blob([text],{type:mime});
   try{const f=new File([blob],name,{type:mime});
-    if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});return}}catch(e){if(e&&e.name==='AbortError')return}
+    if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});onDone&&onDone();return}}catch(e){if(e&&e.name==='AbortError')return}
   try{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();
-    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);showToast('已產生 '+name+'；若沒有下載，請改用「複製」')}catch(e){showToast('無法下載，請改用「複製」')}
+    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);onDone&&onDone();showToast('已產生 '+name+'；若沒有下載，請改用「複製」')}catch(e){showToast('無法下載，請改用「複製」')}
 }
 async function shareText(title,text){
   try{if(navigator.share){await navigator.share({title,text});return}}catch(e){if(e&&e.name==='AbortError')return}
@@ -850,7 +886,9 @@ document.addEventListener('click',e=>{
     case 'sharereport':{const t=trip();return shareText(t.name,reportText(t))}
     case 'csvfile':{const t=trip();return shareOrDownload(safeName(t.name)+'.csv','﻿'+tripRows(t).map(r=>r.map(csvCell).join(',')).join('\r\n'),'text/csv')}
     case 'csvcopy':{const t=trip();return copyText(tripRows(t).map(r=>r.join('\t')).join('\n'),'已複製，可直接貼到試算表')}
-    case 'backup':{const d=new Date();return shareOrDownload('登山行程備份_'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'.json',JSON.stringify(db,null,1),'application/json')}
+    case 'backup':{const d=new Date();closeSheet();return shareOrDownload('登山行程備份_'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'.json',JSON.stringify(db,null,1),'application/json',
+      ()=>{settings.lastBackup=Date.now();try{localStorage.setItem(SKEY,JSON.stringify(settings))}catch(e){}if(view.name==='list')renderList();showToast('已備份')})}
+    case 'changelog':return openChangelog();
     case 'restore':return $('#restorefile').click();
     case 'closesheet':case 'closesheet-btn':return closeSheet();
   }
@@ -877,6 +915,8 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('#shee
 
 try{if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}
 
+if(settings.seenVersion&&settings.seenVersion!==APP_VERSION)setTimeout(()=>showToast('已更新到 v'+APP_VERSION,[{label:'看更新',fn:openChangelog}]),400);
+settings.seenVersion=APP_VERSION;try{localStorage.setItem(SKEY,JSON.stringify(settings))}catch(e){}
 window.__hikelog={calc,fmtDur,legMap,compareCandidates,reportText,get db(){return db}};
 render();
 })();
