@@ -185,6 +185,21 @@ table.rep{border-collapse:collapse;width:100%;font-size:calc(14px*var(--fz));min
 .peaks{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
 .peaks li{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
 .peaks b{display:block} .peaks span{font-size:12px;color:var(--muted)}
+.peakbar{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;margin:14px 0 4px}
+.grp{display:flex;justify-content:space-between;margin:18px 0 8px;font-size:calc(15px*var(--fz))}
+.grp .num{color:var(--muted);font-weight:500}
+.peaklist{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.peak{display:grid;grid-template-columns:2.4em minmax(0,1fr) auto;align-items:center;gap:10px;width:100%;text-align:left;min-height:56px;
+  padding:8px 12px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--muted)}
+.peak.done{background:var(--surface);color:var(--ink);border-color:var(--walk)}
+.pk-rank{font-size:13px;text-align:right}
+.peak.done .pk-rank{color:var(--walk);font-weight:700}
+.pk-main b{display:block;font-size:calc(16px*var(--fz));font-weight:600}
+.peak:not(.done) .pk-main b{font-weight:500}
+.pk-main span{font-size:12px}
+.pk-st{text-align:right;font-size:13px}
+.pk-st small{display:block;font-size:12px;color:var(--muted)}
+.peak.done .pk-st .num{color:var(--walk);font-weight:600}
 .progress{height:10px;border-radius:99px;background:var(--sunk);overflow:hidden;margin-top:8px}
 .progress i{display:block;height:100%;background:var(--walk)}
 .btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
@@ -217,6 +232,35 @@ const MARKS=['水源','岔路','危險地形','收訊點','營地','廁所','觀
 const DANGER=new Set(['危險地形','路況不佳']);
 const WEATHER=['晴','多雲','霧','雨','強風','雪'];
 const TEAM=['好','普通','差'];
+/* 台灣百岳：排名, 名稱, 海拔(m), 路線分區。海拔依來源略有差異 */
+const PEAKS=[[1,'玉山',3952,'玉山群峰'],[2,'雪山',3886,'雪山群峰'],[3,'玉山東峰',3874,'玉山群峰'],[4,'玉山北峰',3858,'玉山群峰'],[5,'玉山南峰',3852,'玉山群峰'],
+[6,'秀姑巒山',3829,'馬博橫斷'],[7,'馬博拉斯山',3776,'馬博橫斷'],[8,'南湖大山',3741,'北一段'],[9,'東小南山',3709,'玉山群峰'],[10,'雪山北峰',3703,'雪山群峰'],
+[11,'中央尖山',3698,'北一段'],[12,'關山',3668,'南一段'],[13,'大水窟山',3643,'南二段'],[14,'南湖大山東峰',3639,'北一段'],[15,'東郡大山',3617,'南三段'],
+[16,'奇萊北峰',3606,'奇萊／能高'],[17,'向陽山',3603,'南二段'],[18,'大劍山',3593,'大小劍'],[19,'雲峰',3562,'南二段'],[20,'奇萊主山',3562,'奇萊／能高'],
+[21,'馬利加南山',3561,'馬博橫斷'],[22,'南湖北山',3534,'北一段'],[23,'大雪山',3530,'雪山西稜'],[24,'品田山',3528,'武陵四秀'],[25,'玉山西峰',3512,'玉山群峰'],
+[26,'頭鷹山',3509,'雪山西稜'],[27,'南湖大山南峰',3505,'北一段'],[28,'三叉山',3496,'南二段'],[29,'大霸尖山',3490,'大霸群峰'],[30,'東巒大山',3479,'南三段'],
+[31,'無明山',3449,'北二段'],[32,'巴巴山',3448,'北一段'],[33,'馬西山',3443,'馬博橫斷'],[34,'合歡山北峰',3422,'合歡群峰'],[35,'小霸尖山',3419,'大霸群峰'],
+[36,'合歡山東峰',3419,'合歡群峰'],[37,'合歡山主峰',3417,'合歡群峰'],[38,'南玉山',3379,'玉山群峰'],[39,'畢祿山',3370,'北二段'],[40,'卓社大山',3368,'干卓萬'],
+[41,'南雙頭山',3359,'南二段'],[42,'奇萊南峰',3357,'奇萊／能高'],[43,'能高山南峰',3348,'奇萊／能高'],[44,'白姑大山',3341,'白姑大山'],[45,'新康山',3338,'新康橫斷'],
+[46,'八通關山',3331,'馬博橫斷'],[47,'丹大山',3329,'南三段'],[48,'桃山',3323,'武陵四秀'],[49,'佳陽山',3314,'大小劍'],[50,'火石山',3309,'雪山西稜'],
+[51,'池有山',3300,'武陵四秀'],[52,'伊澤山',3296,'大霸群峰'],[53,'卑南主山',3292,'南一段'],[54,'志佳陽大山基點峰',3285,'志佳陽'],[55,'干卓萬山',3284,'干卓萬'],
+[56,'太魯閣大山',3282,'奇萊東稜'],[57,'郡大山',3278,'郡大／西巒'],[58,'喀西帕南山',3278,'馬博橫斷'],[59,'轆轆山',3278,'南二段'],[60,'內嶺爾山',3275,'南三段'],
+[61,'鈴鳴山',3272,'北二段'],[62,'能高山',3261,'奇萊／能高'],[63,'火山',3257,'干卓萬'],[64,'小劍山',3256,'大小劍'],[65,'義西請馬至山',3252,'南三段'],
+[66,'小關山',3249,'南一段'],[67,'屏風山',3248,'奇萊／能高'],[68,'無雙山基點峰',3243,'南三段'],[69,'牧山',3241,'干卓萬'],[70,'石門山',3236,'合歡群峰'],
+[71,'玉山前峰',3233,'玉山群峰'],[72,'塔關山',3222,'南一段'],[73,'馬比杉山',3211,'北一段'],[74,'塔芬尖山',3206,'南二段'],[75,'雪山東峰',3199,'雪山群峰'],
+[76,'南華山',3182,'奇萊／能高'],[77,'關山嶺山',3176,'南一段'],[78,'海諾南山',3173,'南一段'],[79,'中雪山',3172,'雪山西稜'],[80,'閂山',3168,'北二段'],
+[81,'甘薯峰',3157,'北二段'],[82,'合歡山西峰',3144,'合歡群峰'],[83,'審馬陣山',3140,'北一段'],[84,'喀拉業山',3132,'武陵四秀'],[85,'庫哈諾辛山',3114,'南一段'],
+[86,'加利山',3112,'大霸群峰'],[87,'白石山',3106,'奇萊／能高'],[88,'磐石山',3105,'奇萊東稜'],[89,'帕托魯山',3102,'奇萊東稜'],[90,'北大武山',3091,'南一段'],
+[91,'西巒大山',3085,'郡大／西巒'],[92,'立霧主山',3071,'奇萊東稜'],[93,'塔芬山',3070,'南二段'],[94,'安東軍山',3066,'奇萊／能高'],[95,'光頭山',3060,'奇萊／能高'],
+[96,'羊頭山',3033,'北二段'],[97,'盆駒山',3030,'馬博橫斷'],[98,'布拉克桑山',3021,'新康橫斷'],[99,'六順山',3009,'南三段'],[100,'鹿山',2981,'玉山群峰']];
+const PEAK_ALIAS={'雪山':['雪山主峰'],'玉山':['玉山主峰'],'南湖大山':['南湖主峰','南湖大山主峰'],'南湖大山東峰':['南湖東峰'],'南湖大山南峰':['南湖南峰'],
+  '奇萊北峰':['奇萊主山北峰','奇萊主北'],'奇萊南峰':['奇萊主山南峰'],'奇萊主山':['奇萊主峰'],'能高山':['能高主山','能高主峰'],
+  '合歡山北峰':['北合歡山','北合歡','合歡北峰'],'合歡山東峰':['東合歡山','合歡東峰'],'合歡山主峰':['合歡山','合歡主峰'],'合歡山西峰':['西合歡山','合歡西峰'],
+  '馬博拉斯山':['烏拉孟山','馬博拉斯'],'塔芬尖山':['達芬尖山'],'塔芬山':['達芬山'],'志佳陽大山基點峰':['志佳陽大山','志佳陽'],'無雙山基點峰':['無雙山'],
+  '卑南主山':['卑南山'],'關山':['關山主峰'],'大霸尖山':['大霸'],'北大武山':['大武山']};
+const normName=s=>String(s||'').replace(/[（(][^）)]*[）)]/g,'').replace(/\s|三角點|一等|二等|三等/g,'').trim();
+const PEAK_INDEX=new Map();PEAKS.forEach(p=>{PEAK_INDEX.set(normName(p[1]),p);(PEAK_ALIAS[p[1]]||[]).forEach(a=>PEAK_INDEX.set(normName(a),p))});
+const peakOf=name=>PEAK_INDEX.get(normName(name))||null;
 const $=s=>document.querySelector(s);
 const pad=n=>String(n).padStart(2,'0');
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -225,7 +269,7 @@ const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 let db=load()||seed();
 let settings=Object.assign({night:false,large:false,gps:true},loadSettings());
 let view={name:'list',id:null};
-let armed=null, toastTimer=null, geoDeniedShown=false, cmpChoice={};
+let armed=null, toastTimer=null, geoDeniedShown=false, cmpChoice={}, peakFilter='all', peakGroup='route';
 normalize();applySettings();
 
 /* ---------- storage ---------- */
@@ -234,7 +278,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){showTo
 function loadSettings(){try{return JSON.parse(localStorage.getItem(SKEY)||'{}')}catch(e){return {}}}
 function saveSettings(){try{localStorage.setItem(SKEY,JSON.stringify(settings))}catch(e){}applySettings()}
 function applySettings(){const r=document.documentElement;r.classList.toggle('night',!!settings.night);r.classList.toggle('large',!!settings.large)}
-function normalize(){db.trips.forEach(t=>{t.marks=t.marks||[];t.stations.forEach(s=>{s.tags=s.tags||[]})})}
+function normalize(){db.peaksManual=db.peaksManual||[];db.trips.forEach(t=>{t.marks=t.marks||[];t.stations.forEach(s=>{s.tags=s.tags||[]})})}
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 
 function seed(){
@@ -534,7 +578,11 @@ function saveStation(i){
   s.arr=fromInput($('#f-arr').value); s.dep=fromInput($('#f-dep').value); s.note=$('#f-snote').value.trim();
   s.tags=picked('tagchips'); s.weather=picked('wxchips')[0]||null; s.team=picked('teamchips')[0]||null; s.alt=readAlt();
   if(t.ended){let mx=0;t.stations.forEach(x=>[x.arr,x.dep].forEach(v=>{if(v!=null&&v>mx)mx=v}));t.ended=mx||t.ended}
+  const pk=peakOf(s.name), autoTag=pk&&!s.tags.includes('百岳')&&!s.peakDismissed;
+  if(autoTag){s.tags.push('百岳');if(s.alt==null)s.alt=pk[2]}
+  if(pk&&!s.tags.includes('百岳'))s.peakDismissed=true;
   save(); closeSheet(); render();
+  if(autoTag)showToast('已列入百岳：第 '+pk[0]+' 座 '+pk[1],[{label:'不要列入',fn:()=>{s.tags=s.tags.filter(g=>g!=='百岳');s.peakDismissed=true;save();render()}}]);
 }
 
 function openMarkMenu(){
@@ -635,9 +683,6 @@ function renderStats(){
   let el=0,wk=0,rs=0,up=0,st=0;
   done.forEach(t=>{const c=calc(t,now);el+=c.elapsed;wk+=c.walk;rs+=c.rest;up+=c.up;st+=t.stations.filter(s=>s.arr!=null).length});
   const byType={};done.forEach(t=>{byType[t.type||'其他']=(byType[t.type||'其他']||0)+1});
-  const peaks=new Map();
-  db.trips.filter(t=>!isExample(t)).forEach(t=>t.stations.forEach(s=>{if((s.tags||[]).includes('百岳')){const ts=s.arr??s.dep??t.created;const p=peaks.get(s.name.trim());if(!p||ts<p.ts)peaks.set(s.name.trim(),{ts,trip:t.name,alt:s.alt,count:(p?p.count:0)+1});else p.count++}}));
-  const plist=[...peaks.entries()].sort((a,b)=>a[1].ts-b[1].ts);
   const years={};done.forEach(t=>{const y=new Date(calc(t,now).start||t.created).getFullYear();years[y]=(years[y]||0)+1});
   $('#app').className='app noaction';
   $('#app').innerHTML=`
@@ -653,13 +698,63 @@ function renderStats(){
     </div></div>
     ${Object.keys(byType).length?`<h3 class="sec">依類型</h3><div class="card"><div class="kv">${Object.entries(byType).map(([k,v])=>`<div><b class="num">${v}</b><span>${esc(k)}</span></div>`).join('')}</div></div>`:''}
     ${Object.keys(years).length>1?`<h3 class="sec">依年度</h3><div class="card"><div class="kv">${Object.entries(years).sort().map(([k,v])=>`<div><b class="num">${v}</b><span>${k} 年</span></div>`).join('')}</div></div>`:''}
-    <h3 class="sec">百岳完成清單</h3>
-    <div class="card"><b class="num" style="font-size:calc(26px*var(--fz))">${plist.length}</b> <span class="hint" style="display:inline">/ 100 座</span>
-      <div class="progress"><i style="width:${Math.min(100,plist.length)}%"></i></div></div>
-    ${plist.length?`<ul class="peaks" style="margin-top:10px">${plist.map(([n,p],i)=>`<li><b>${i+1}. ${esc(n)}</b><span>${fmtDate(p.ts)}${p.alt?'｜'+p.alt+'m':''}${p.count>1?'｜登頂 '+p.count+' 次':''}</span></li>`).join('')}</ul>`
-      :`<p class="hint" style="margin-top:8px">在山頂那一站點開編輯，勾選「百岳」標記，就會列入清單。</p>`}`;
+    ${peaksSection()}`;
   $('#actionbar').innerHTML='';
 }
+
+/* ---------- 百岳 ---------- */
+function peakClimbs(){
+  const m=new Map();PEAKS.forEach(p=>m.set(p[0],[]));const extra=new Map();
+  db.trips.filter(t=>!isExample(t)).forEach(t=>t.stations.forEach(s=>{if(!(s.tags||[]).includes('百岳'))return;
+    const ts=s.arr??s.dep??t.created, pk=peakOf(s.name), rec={ts,trip:t,station:s};
+    if(pk)m.get(pk[0]).push(rec);else{const k=s.name.trim();if(!extra.has(k))extra.set(k,[]);extra.get(k).push(rec)}}));
+  db.peaksManual.forEach(x=>{if(m.has(x.rank))m.get(x.rank).push({ts:x.ts,manual:x})});
+  m.forEach(v=>v.sort((a,b)=>a.ts-b.ts));
+  return {m,extra};
+}
+function peaksSection(){
+  const {m,extra}=peakClimbs();const done=PEAKS.filter(p=>m.get(p[0]).length);
+  const show=PEAKS.filter(p=>peakFilter==='all'||(peakFilter==='done')===(m.get(p[0]).length>0));
+  const item=p=>{const c=m.get(p[0]),ok=c.length>0;return `<li><button class="peak ${ok?'done':''}" data-act="peak" data-rank="${p[0]}">
+    <span class="pk-rank num">${p[0]}</span><span class="pk-main"><b>${p[1]}</b><span class="num">${p[2]} m</span></span>
+    <span class="pk-st">${ok?`<span class="num">${fmtDate(c[0].ts)}</span>${c.length>1?`<small>${c.length} 次</small>`:''}`:'<small>未登</small>'}</span></button></li>`};
+  let body='';
+  if(peakGroup==='route'){const groups=[];show.forEach(p=>{let g=groups.find(x=>x.k===p[3]);if(!g){g={k:p[3],items:[]};groups.push(g)}g.items.push(p)});
+    groups.sort((a,b)=>Math.min(...a.items.map(x=>x[0]))-Math.min(...b.items.map(x=>x[0])));
+    body=groups.map(g=>{const all=PEAKS.filter(p=>p[3]===g.k),n=all.filter(p=>m.get(p[0]).length).length;
+      return `<h4 class="grp">${g.k}<span class="num">${n} / ${all.length}</span></h4><ul class="peaklist">${g.items.map(item).join('')}</ul>`}).join('');}
+  else body=`<ul class="peaklist">${show.map(item).join('')}</ul>`;
+  return `<h3 class="sec">百岳完成清單</h3>
+    <div class="card"><b class="num" style="font-size:calc(26px*var(--fz))">${done.length}</b> <span class="hint" style="display:inline">/ 100 座</span>
+      ${done.length?`<span class="hint" style="display:inline">｜最高 ${done[0][1]} ${done[0][2]} m</span>`:''}
+      <div class="progress"><i style="width:${done.length}%"></i></div></div>
+    <div class="peakbar">
+      <div class="chips">${[['all','全部'],['done','已登'],['todo','未登']].map(([k,l])=>`<button class="chip" data-act="pkfilter" data-v="${k}" aria-pressed="${peakFilter===k}">${l}</button>`).join('')}</div>
+      <div class="chips">${[['route','依路線'],['rank','依排名']].map(([k,l])=>`<button class="chip" data-act="pkgroup" data-v="${k}" aria-pressed="${peakGroup===k}">${l}</button>`).join('')}</div>
+    </div>
+    ${show.length?body:`<p class="empty">${peakFilter==='done'?'還沒有登頂紀錄。點任一座山可以補登以前的紀錄。':'全部完成，恭喜！'}</p>`}
+    ${extra.size?`<h3 class="sec">標了「百岳」但名稱對不上名單</h3><ul class="notes">${[...extra.entries()].map(([n,r])=>`<li><b>${esc(n)}</b>｜${esc(r[0].trip.name)}，${fmtDate(r[0].ts)}<br><span class="hint">請把站名改成名單上的名稱（例如「奇萊主山北峰」改「奇萊北峰」也可以），才會計入。</span></li>`).join('')}</ul>`:''}
+    <p class="hint" style="margin-top:12px">站名與百岳相同時會自動列入，也可以點任一座山補登以前的紀錄。</p>`;
+}
+function openPeak(rank){
+  const p=PEAKS.find(x=>x[0]===rank);const c=peakClimbs().m.get(rank);
+  openSheet(`<h2>${p[0]}. ${p[1]}</h2><p class="hint">${p[2]} m｜${p[3]}${PEAK_ALIAS[p[1]]?'｜也稱 '+PEAK_ALIAS[p[1]].join('、'):''}</p>
+    ${c.length?`<ul class="notes">${c.map(r=>r.manual?`<li><b class="num">${fmtDate(r.ts)}</b>｜補登${r.manual.note?'｜'+esc(r.manual.note):''}
+        <div class="row2" style="margin-top:8px"><button class="ghost danger" data-act="delmanual" data-id="${r.manual.id}">刪除這筆補登</button></div></li>`
+      :`<li><b class="num">${fmtTime(r.ts)}　${fmtDate(r.ts)}</b><br>${esc(r.trip.name)}${r.station.alt!=null?'｜'+r.station.alt+' m':''}
+        <div class="row2" style="margin-top:8px"><button class="ghost" data-act="gotrip" data-id="${r.trip.id}">看行程</button><button class="ghost" data-act="gotripreport" data-id="${r.trip.id}">看報告</button></div></li>`).join('')}</ul>`
+      :'<p class="hint">還沒有登頂紀錄。</p>'}
+    <div class="field"><label for="f-pdate">補登日期（以前去過、當時沒用 App）</label><input type="date" id="f-pdate"></div>
+    <div class="field"><label for="f-pnote">備註</label><input id="f-pnote" placeholder="例：南二段第三天" autocomplete="off"></div>
+    <div class="row2"><button class="ghost" data-act="closesheet-btn">關閉</button><button class="primary" data-act="addmanual" data-rank="${rank}">補登</button></div>`);
+}
+function addManual(rank){
+  const v=$('#f-pdate').value;if(!v){showToast('請先選日期');return}
+  const [y,mo,d]=v.split('-').map(Number);
+  db.peaksManual.push({id:uid(),rank,ts:new Date(y,mo-1,d,12).getTime(),note:$('#f-pnote').value.trim()});
+  save();closeSheet();const yy=window.scrollY;renderStats();window.scrollTo(0,yy);showToast('已補登');
+}
+function rerenderStats(){const y=window.scrollY;renderStats();window.scrollTo(0,y)}
 
 /* ---------- export / backup ---------- */
 function csvCell(v){v=v==null?'':String(v);return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
@@ -724,6 +819,13 @@ document.addEventListener('click',e=>{
     case 'display':return openDisplay();
     case 'setting':{const k=el.dataset.key;settings[k]=!settings[k];saveSettings();el.setAttribute('aria-pressed',settings[k]);el.textContent=settings[k]?'開':'關';
       if(k==='gps'&&settings.gps&&navigator.geolocation){try{navigator.geolocation.getCurrentPosition(()=>{},()=>{},{timeout:5000})}catch(err){}}return}
+    case 'peak':return openPeak(+el.dataset.rank);
+    case 'addmanual':return addManual(+el.dataset.rank);
+    case 'delmanual':if(confirmTap(el,'delman','再按一次確認刪除')){db.peaksManual=db.peaksManual.filter(x=>x.id!==el.dataset.id);save();closeSheet();rerenderStats();showToast('已刪除補登')}return;
+    case 'pkfilter':peakFilter=el.dataset.v;return rerenderStats();
+    case 'pkgroup':peakGroup=el.dataset.v;return rerenderStats();
+    case 'gotrip':closeSheet();return go({name:'trip',id:el.dataset.id});
+    case 'gotripreport':closeSheet();return go({name:'report',id:el.dataset.id});
     case 'start':case 'arrive':case 'depart':return record(act);
     case 'markmenu':return openMarkMenu();
     case 'addmark':return addMark(el.dataset.tag);
@@ -758,6 +860,7 @@ $('#restorefile').addEventListener('change',e=>{
   const f=e.target.files[0]; if(!f)return;
   const rd=new FileReader();
   rd.onload=()=>{try{const d=JSON.parse(rd.result);if(!d||!Array.isArray(d.trips))throw 0;
+    (d.peaksManual||[]).forEach(m=>{if(m&&m.id&&!db.peaksManual.some(x=>x.id===m.id))db.peaksManual.push(m)});
     let n=0;d.trips.forEach(t=>{if(!t.id||!Array.isArray(t.stations))return;const i=db.trips.findIndex(x=>x.id===t.id);i>=0?db.trips[i]=t:db.trips.push(t);n++});
     normalize();save();render();showToast('已還原 '+n+' 筆行程')}catch(err){showToast('這個檔案不是有效的行程備份')}
     e.target.value=''};
