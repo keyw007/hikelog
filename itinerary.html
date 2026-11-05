@@ -65,6 +65,7 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .sheet td.cut{color:#c00000;font-weight:700}
 .sheet td.late{background:#ffc7ce!important;color:#c00000!important}
 .sheet td.cum{color:#444}
+.sheet .est{color:#b26b00;font-style:italic}
 .sheet .legend td{border:0;text-align:left;font-size:11.5px;color:#333;padding:6px 2px 0}
 .sheet .sw{display:inline-block;width:12px;height:12px;vertical-align:-1px;margin-right:4px;border:1px solid #000}
 .sheet .sw.dk{background:#d9d9d9}.sheet .sw.ct{background:#fff;border-color:#c00000}
@@ -131,7 +132,7 @@ function parseDay(text){
   const H=R[hi].map(clean);
   const col=name=>H.findIndex(h=>h.startsWith(name));
   const C={type:col('類型'),name:col('地點'),eta:col('預計抵達'),shang:col('上河時間'),cost:col('花費時間'),km:col('距離'),up:col('爬升'),down:col('下降'),
-    alt:col('海拔'),cutoff:col('關門'),water:col('水源'),comm:col('通訊點'),camp:col('營地'),retreat:col('撤退點'),note:col('備註')};
+    alt:col('海拔'),cutoff:col('關門'),est:col('估算'),water:col('水源'),comm:col('通訊點'),camp:col('營地'),retreat:col('撤退點'),note:col('備註')};
   if(C.name<0||C.eta<0)throw new Error('欄位對不上：找不到「地點」或「預計抵達」。');
   const meta={day:null,date:'',sunrise:'',sunset:'',route:'',notes:'',sum:{}};
   const mi=find('天數');
@@ -148,7 +149,7 @@ function parseDay(text){
     const r=R[i];if(i===ni)break;
     const name=clean(r[C.name]);if(!name)continue;
     const g=k=>C[k]>=0?clean(r[C[k]]):'';
-    rows.push({type:g('type')||'行走',name,eta:g('eta'),cutoff:g('cutoff'),shang:g('shang'),cost:g('cost'),km:g('km'),up:g('up'),down:g('down'),alt:g('alt'),
+    rows.push({type:g('type')||'行走',name,eta:g('eta'),cutoff:g('cutoff'),est:g('est'),shang:g('shang'),cost:g('cost'),km:g('km'),up:g('up'),down:g('down'),alt:g('alt'),
       note:g('note'),flags:[['water','水源'],['camp','營地'],['comm','通訊點'],['retreat','撤退點']].filter(([k])=>g(k).toUpperCase()==='TRUE').map(f=>f[1])});
   }
   if(!rows.length)throw new Error('沒有讀到任何地點。這一天的表格是空的嗎？');
@@ -204,7 +205,7 @@ function sheetHTML(d){
        (hasCut?`<td class="cut">${cm!=null?esc(hm(r.cutoff)):''}</td>`:'')+
        `<td class="c">${cost?cost:''}</td>`+(showCum?`<td class="cum">${cum}</td>`:'')+
        `<td>${dash(r.up)}</td><td>${dash(r.down)}</td><td>${dash(r.km)}</td><td>${dash(r.alt)}</td>`+
-       `<td class="n">${esc(r.name)}${tags}</td><td>${dash(r.shang)}</td>${showNote?`<td class="note">${esc(r.note)}</td>`:''}</tr>`;
+       `<td class="n">${esc(r.name)}${tags}</td><td>${dash(r.shang)||(num(r.est)&&r.type==='行走'&&!num(r.shang)?`<span class="est">估 ${num(r.est)}</span>`:'')}</td>${showNote?`<td class="note">${esc(r.note)}</td>`:''}</tr>`;
   });
   const S=meta.sum, walkMin=(()=>{const m=String(S['行走']||'').match(/^(\d+):(\d\d)$/);return m?(+m[1])*60+(+m[2]):null})();
   const items=[];
@@ -231,6 +232,7 @@ function sheetHTML(d){
   const leg=[];
   if(useDark&&rows.some((r,i)=>{const m=etaAbs[i];return m!=null&&(m%1440<sr||m%1440>ss)}))leg.push('<span class="sw dk"></span>灰底：日出前或日落後抵達，需頭燈');
   if(hasCut)leg.push('<span class="sw ct"></span>關門時間：超過此時間未抵達即折返');
+  if(rows.some(r=>r.type==='行走'&&!num(r.shang)&&num(r.est)))leg.push('<span class="est">估</span>：GPX 坡度估算，或依上河時間按坡度分配');
   if(showCum)leg.push(`累積時間：從 ${esc(hm(rows[fw-1].eta))} ${esc(rows[fw-1].name)} 起算`);
   if(leg.length)h+=`<tr class="legend"><td colspan="${N}">${leg.join('　　')}</td></tr>`;
   return h+'</table>';
