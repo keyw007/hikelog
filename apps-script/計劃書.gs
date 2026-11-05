@@ -6,10 +6,10 @@
  *
  * 安裝：擴充功能 → Apps Script → 貼上本檔 → 儲存 → 重新整理試算表
  *       → 上方選單「計劃書」→「產生計劃書」→ 第一次會要求授權。
- * 版本：1.0.0
+ * 版本：1.1.0（加入停留／出發時間、地形估算）
  */
 
-var PLAN_VERSION = '1.0.0';
+var PLAN_VERSION = '1.1.0';
 
 var COLOR = {
   label: '#F2DCDB',   // 主表左欄粉紅底
@@ -251,7 +251,8 @@ function parseDaySheet(name, v) {
     custom: col('自訂'), spend: col('花費'), km: col('距離'), up: col('爬升'), down: col('下降'),
     alt: col('海拔'), x97: col('TWD97 X'), y97: col('TWD97 Y'), lat: col('緯度'), lng: col('經度'),
     water: col('水源'), comm: col('通訊點'), camp: col('營地'), retreat: col('撤退點'),
-    note: col('備註'), close: col('關門'), est: col('估算'), actual: col('實際')
+    note: col('備註'), close: col('關門'), est: col('估算'), actual: col('實際'),
+    stop: col('停留'), dep: col('出發'), terr: col('地形估算')
   };
   var r1 = v[0] || [];
   var info = pairs(r1);
@@ -279,7 +280,8 @@ function parseDaySheet(name, v) {
       x97: g(row, C.x97), y97: g(row, C.y97), lat: g(row, C.lat), lng: g(row, C.lng),
       water: isTrue(g(row, C.water)), comm: isTrue(g(row, C.comm)), camp: isTrue(g(row, C.camp)),
       retreat: isTrue(g(row, C.retreat)),
-      note: g(row, C.note), close: g(row, C.close), est: g(row, C.est)
+      note: g(row, C.note), close: g(row, C.close), est: g(row, C.est),
+      stop: g(row, C.stop), dep: (+g(row, C.stop) > 0) ? g(row, C.dep) : '', terr: g(row, C.terr)
     });
   }
   return {
@@ -343,7 +345,7 @@ function decorateDay(d) {
     r.dark = (t != null && sr != null && ss != null && (t < sr || t > ss));
     var c = toMin(r.close);
     r.late = (t != null && c != null && t > c);
-    r.isEst = (!r.sh && !r.custom && !!r.est && !!r.spend && r.type === '行走');
+    r.isEst = (!r.sh && !r.custom && (!!r.terr || !!r.est) && !!r.spend && r.type === '行走');
   });
   return d;
 }
@@ -629,7 +631,7 @@ function buildEquip(body, data) {
 /* ─────────── 附件二 ─────────── */
 
 function legend(body) {
-  var p = para(body, '灰底：日出前或日落後抵達（需頭燈）　紅字：關門時間，或預計抵達晚於關門　估：沒有上河時間，依坡度估算　藍字：休息、營地、交通', { size: 8, color: COLOR.grey, after: 6 });
+  var p = para(body, '灰底：日出前或日落後抵達（需頭燈）　紅字：關門時間，或預計抵達晚於關門　估：沒有上河時間，依地形條件或 GPX 坡度估算　出發：該點有停留時才顯示　藍字：休息、營地、交通', { size: 8, color: COLOR.grey, after: 6 });
   return p;
 }
 
@@ -646,8 +648,10 @@ function buildDay(body, d) {
   if (!d.route) bar.getRow(1).removeFromParent();
 
   var hasClose = d.rows.some(function (r) { return r.close; });
+  var hasDep = d.rows.some(function (r) { return r.dep; });
   var cols = [
     { h: '抵達', w: 34, f: function (r) { return r.eta; } },
+    hasDep ? { h: '出發', w: 34, f: function (r) { return r.dep; } } : null,
     hasClose ? { h: '關門', w: 32, f: function (r) { return r.close; } } : null,
     { h: '花費', w: 34, f: function (r) { return r.spend === '0' ? '' : (r.isEst ? '估 ' + r.spend : r.spend); } },
     { h: '累積', w: 34, f: function (r) { return r.cum; } },
@@ -655,7 +659,7 @@ function buildDay(body, d) {
     { h: '下降', w: 30, f: function (r) { return r.down; } },
     { h: '公里', w: 30, f: function (r) { return r.km; } },
     { h: '海拔', w: 32, f: function (r) { return r.alt; } },
-    { h: '地點', w: 112, f: function (r) { return r.name; } },
+    { h: '地點', w: hasDep && hasClose ? 96 : 112, f: function (r) { return r.name; } },
     { h: '上河', w: 28, f: function (r) { return r.sh; } },
     { h: '備註', w: 0, f: function (r) { return r.note; } }
   ].filter(Boolean);
@@ -668,7 +672,7 @@ function buildDay(body, d) {
   styleTable(tbl, cols.map(function (c) { return c.w; }), 8);
   headRow(tbl, COLOR.head);
 
-  var iEta = 0, iClose = hasClose ? 1 : -1;
+  var iEta = 0, iClose = cols.map(function (c) { return c.h; }).indexOf('關門');
   var iName = cols.map(function (c) { return c.h; }).indexOf('地點');
   var iSpend = cols.map(function (c) { return c.h; }).indexOf('花費');
   d.rows.forEach(function (r, k) {

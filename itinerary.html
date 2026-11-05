@@ -132,7 +132,7 @@ function parseDay(text){
   const H=R[hi].map(clean);
   const col=name=>H.findIndex(h=>h.startsWith(name));
   const C={type:col('類型'),name:col('地點'),eta:col('預計抵達'),shang:col('上河時間'),cost:col('花費時間'),km:col('距離'),up:col('爬升'),down:col('下降'),
-    alt:col('海拔'),cutoff:col('關門'),est:col('估算'),water:col('水源'),comm:col('通訊點'),camp:col('營地'),retreat:col('撤退點'),note:col('備註')};
+    alt:col('海拔'),cutoff:col('關門'),est:col('估算'),custom:col('自訂'),dep:col('出發'),stop:col('停留'),terr:col('地形估算'),water:col('水源'),comm:col('通訊點'),camp:col('營地'),retreat:col('撤退點'),note:col('備註')};
   if(C.name<0||C.eta<0)throw new Error('欄位對不上：找不到「地點」或「預計抵達」。');
   const meta={day:null,date:'',sunrise:'',sunset:'',route:'',notes:'',sum:{}};
   const mi=find('天數');
@@ -149,7 +149,7 @@ function parseDay(text){
     const r=R[i];if(i===ni)break;
     const name=clean(r[C.name]);if(!name)continue;
     const g=k=>C[k]>=0?clean(r[C[k]]):'';
-    rows.push({type:g('type')||'行走',name,eta:g('eta'),cutoff:g('cutoff'),est:g('est'),shang:g('shang'),cost:g('cost'),km:g('km'),up:g('up'),down:g('down'),alt:g('alt'),
+    rows.push({type:g('type')||'行走',name,eta:g('eta'),cutoff:g('cutoff'),est:g('est'),custom:g('custom'),dep:num(g('stop'))?g('dep'):'',terr:g('terr'),shang:g('shang'),cost:g('cost'),km:g('km'),up:g('up'),down:g('down'),alt:g('alt'),
       note:g('note'),flags:[['water','水源'],['camp','營地'],['comm','通訊點'],['retreat','撤退點']].filter(([k])=>g(k).toUpperCase()==='TRUE').map(f=>f[1])});
   }
   if(!rows.length)throw new Error('沒有讀到任何地點。這一天的表格是空的嗎？');
@@ -171,6 +171,9 @@ const fmtInt=v=>{const n=num(v);return n==null?'':Math.round(n).toLocaleString('
 function sheetHTML(d){
   const {meta,rows}=d, showNote=opts.note&&rows.some(r=>r.note);
   const hasCut=rows.some(r=>toMin(r.cutoff)!=null);
+  const hasDep=rows.some(r=>toMin(r.dep)!=null);
+  // 沒有上河、沒有自訂時，花費時間來自估算：地形估算優先，其次 GPX 估算
+  const estOf=r=>r.type==='行走'&&!num(r.shang)&&!num(r.custom)?(num(r.terr)??num(r.est)):null;
   // elapsed time counts from the moment walking starts (end of the row before the first walking row)
   const fw=rows.findIndex(r=>r.type==='行走');
   const etaAbs=[];let prev=null,add=0;
@@ -179,8 +182,9 @@ function sheetHTML(d){
   const showCum=opts.cum&&start!=null;
   const sr=toMin(meta.sunrise),ss=toMin(meta.sunset),useDark=opts.dark&&sr!=null&&ss!=null;
   // keep the image near Word page width: tighten columns when the optional ones are on
-  const extra=(hasCut?1:0)+(showCum?1:0), tw=extra?64:76, nw=extra?50:57;
+  const extra=(hasCut?1:0)+(showCum?1:0)+(hasDep?1:0), tw=extra>=3?58:extra?64:76, nw=extra>=3?46:extra?50:57;
   const cols=[['抵達時間',tw]];
+  if(hasDep)cols.push(['出發時間',tw]);
   if(hasCut)cols.push(['關門時間',tw]);
   cols.push(['花費時間',tw]);
   if(showCum)cols.push(['累積時間',tw]);
@@ -202,10 +206,11 @@ function sheetHTML(d){
     const cm=toMin(r.cutoff), over=cm!=null&&dayM!=null&&dayM>cm;
     const cum=showCum&&em!=null&&i>=fw&&showEta?fmtHM(em-start):'';
     h+=`<tr class="${ev?'ev':''}${dark?' dark':''}"><td class="t${over?' late':''}">${showEta?esc(hm(r.eta)):''}</td>`+
+       (hasDep?`<td class="t">${toMin(r.dep)!=null?esc(hm(r.dep)):''}</td>`:'')+
        (hasCut?`<td class="cut">${cm!=null?esc(hm(r.cutoff)):''}</td>`:'')+
        `<td class="c">${cost?cost:''}</td>`+(showCum?`<td class="cum">${cum}</td>`:'')+
        `<td>${dash(r.up)}</td><td>${dash(r.down)}</td><td>${dash(r.km)}</td><td>${dash(r.alt)}</td>`+
-       `<td class="n">${esc(r.name)}${tags}</td><td>${dash(r.shang)||(num(r.est)&&r.type==='行走'&&!num(r.shang)?`<span class="est">估 ${num(r.est)}</span>`:'')}</td>${showNote?`<td class="note">${esc(r.note)}</td>`:''}</tr>`;
+       `<td class="n">${esc(r.name)}${tags}</td><td>${dash(r.shang)||(estOf(r)?`<span class="est">估 ${estOf(r)}</span>`:'')}</td>${showNote?`<td class="note">${esc(r.note)}</td>`:''}</tr>`;
   });
   const S=meta.sum, walkMin=(()=>{const m=String(S['行走']||'').match(/^(\d+):(\d\d)$/);return m?(+m[1])*60+(+m[2]):null})();
   const items=[];
@@ -232,7 +237,8 @@ function sheetHTML(d){
   const leg=[];
   if(useDark&&rows.some((r,i)=>{const m=etaAbs[i];return m!=null&&(m%1440<sr||m%1440>ss)}))leg.push('<span class="sw dk"></span>灰底：日出前或日落後抵達，需頭燈');
   if(hasCut)leg.push('<span class="sw ct"></span>關門時間：超過此時間未抵達即折返');
-  if(rows.some(r=>r.type==='行走'&&!num(r.shang)&&num(r.est)))leg.push('<span class="est">估</span>：GPX 坡度估算，或依上河時間按坡度分配');
+  if(rows.some(r=>estOf(r)))leg.push(`<span class="est">估</span>：沒有上河時間，${rows.some(r=>estOf(r)&&num(r.terr))?'依地形條件或GPX坡度':'依GPX坡度'}估算`);
+  if(hasDep)leg.push('出發時間：該點有停留時才顯示');
   if(showCum)leg.push(`累積時間：從 ${esc(hm(rows[fw-1].eta))} ${esc(rows[fw-1].name)} 起算`);
   if(leg.length)h+=`<tr class="legend"><td colspan="${N}">${leg.join('　　')}</td></tr>`;
   return h+'</table>';
