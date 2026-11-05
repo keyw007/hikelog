@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>行程圖產生器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+/* Page chrome: quiet working surface. The rendered sheet (.sheet) deliberately copies the plan-document look and stays light in every theme. */
+:root{
+  --bg:#eef1ef; --surface:#fff; --ink:#18211c; --muted:#5d6a63; --line:#cfd8d3; --accent:#2c6a4c; --warn:#b42318;
+  --ui:-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif;
+  --doc:"Noto Sans TC","Microsoft JhengHei","PingFang TC",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{--bg:#101513;--surface:#18201c;--ink:#e3eae6;--muted:#93a199;--line:#2b3631;--accent:#6cc298;--warn:#ff8a7a;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--ui)}
+.wrap{max-width:1000px;margin:0 auto;padding:24px max(16px,env(safe-area-inset-left)) 80px max(16px,env(safe-area-inset-right))}
+h1{font-size:22px;margin:0 0 4px}
+.lead{color:var(--muted);margin:0 0 18px}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:16px}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:14px}
+.step b{display:block;color:var(--accent);font-size:13px;margin-bottom:2px}
+kbd{font:12px ui-monospace,Menlo,monospace;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 5px;background:var(--bg)}
+.drop{display:block;width:100%;min-height:96px;border:2px dashed var(--line);border-radius:14px;background:var(--surface);color:var(--ink);
+  padding:14px;font:14px/1.5 var(--ui);resize:vertical}
+.drop:focus{outline:none;border-color:var(--accent)}
+.msg{min-height:22px;margin:8px 2px;font-size:14px;color:var(--muted)}
+.msg.err{color:var(--warn)}
+.bar{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin:4px 0 18px;font-size:14px}
+.bar label{display:flex;gap:6px;align-items:center}
+.bar .sp{flex:1}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 14px;min-height:40px}
+button.pri{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+@media (prefers-color-scheme:dark){button.pri{color:#0b1510}}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.days{display:grid;gap:22px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;min-width:0}
+.card-h{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.card-h strong{font-size:16px;margin-right:auto}
+.scroll{overflow-x:auto;background:#fff;border-radius:6px}
+.empty{color:var(--muted);text-align:center;padding:30px 10px;border:1px dashed var(--line);border-radius:14px}
+
+/* ---------- rendered sheet: mirrors the plan document's day tables ---------- */
+.sheet{font-family:var(--doc);color:#000;background:#fff;padding:8px;width:max-content}
+.sheet table{border-collapse:collapse;table-layout:fixed;font-size:13px;line-height:1.35}
+.sheet td,.sheet th{border:1px solid #000;padding:3px 6px;text-align:center;vertical-align:middle;word-break:break-all}
+.sheet th{background:#ccecf2;font-weight:400;white-space:nowrap}
+.sheet .title td{background:#ffff00;color:#e00000;font-weight:700}
+.sheet .route td{background:#ffff00;font-size:12.5px}
+.sheet tr.ev td.t,.sheet tr.ev td.c,.sheet tr.ev td.n{color:#1f3fbf;font-weight:700}
+.sheet td.n{text-align:center}
+.sheet td.note{text-align:left;font-size:12px}
+.sheet .tags{display:inline-block;font-size:11px;font-weight:400;color:#7a4a00;margin-left:4px}
+.sheet .sum td{background:#f4b183}
+.sheet .sum td.k{text-align:center}
+.sheet .sum td.v{background:#fff;font-weight:700}
+.sheet .sum td.blank{background:#f4b183;border-top:0;border-bottom:0}
+.sheet .notes td{background:#f4b183;text-align:left;white-space:pre-wrap;font-size:12.5px;padding:6px 8px}
+.sheet .warnv{color:#c00000}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>行程圖產生器</h1>
+  <p class="lead">把 Google 試算表的每日頁貼進來，產生跟行程計劃書一樣格式的圖片，可以直接貼到 Word。</p>
+  <div class="steps">
+    <div class="step"><b>1. 複製</b>在試算表打開某一天（例如 D2），按 <kbd>Ctrl</kbd>+<kbd>A</kbd> 全選，再按 <kbd>Ctrl</kbd>+<kbd>C</kbd>。Mac 用 <kbd>⌘</kbd>。</div>
+    <div class="step"><b>2. 貼上</b>回到這頁，點下方框框後按 <kbd>Ctrl</kbd>+<kbd>V</kbd>。每貼一天就多一張圖，D1～D5 可以連續貼。</div>
+    <div class="step"><b>3. 放到 Word</b>按「複製圖片」後到 Word 貼上；或按「下載 PNG」，再用 Word 的「插入 → 圖片」。</div>
+  </div>
+  <textarea id="drop" class="drop" placeholder="在這裡貼上（Ctrl+V）每日頁的內容…"></textarea>
+  <div id="msg" class="msg" role="status"></div>
+  <div class="bar">
+    <label><input type="checkbox" id="opt-note" checked> 顯示備註欄</label>
+    <label><input type="checkbox" id="opt-tags" checked> 地點旁標示水源、營地等</label>
+    <label><input type="checkbox" id="opt-food" checked> 小計加上行動糧與需水</label>
+    <span class="sp"></span>
+    <button id="btn-clear" type="button">清除全部</button>
+  </div>
+  <div id="days" class="days"><p class="empty">還沒有資料。照上面三個步驟貼上一天的行程。</p></div>
+</div>
+
+<script>
+(function(){
+'use strict';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const days=new Map();
+const opts={note:true,tags:true,food:true};
+
+/* Google Sheets copies as TSV; cells with line breaks are quoted with doubled quotes inside. */
+function parseTSV(text){
+  const rows=[];let row=[],cell='',i=0,q=false;
+  text=text.replace(/\r\n?/g,'\n');
+  while(i<text.length){
+    const ch=text[i];
+    if(q){
+      if(ch==='"'){if(text[i+1]==='"'){cell+='"';i+=2;continue}q=false;i++;continue}
+      cell+=ch;i++;continue;
+    }
+    if(ch==='"'&&cell===''){q=true;i++;continue}
+    if(ch==='\t'){row.push(cell);cell='';i++;continue}
+    if(ch==='\n'){row.push(cell);rows.push(row);row=[];cell='';i++;continue}
+    cell+=ch;i++;
+  }
+  if(cell!==''||row.length){row.push(cell);rows.push(row)}
+  return rows;
+}
+
+const num=v=>{if(v==null)return null;const s=String(v).replace(/,/g,'').trim();if(s==='')return null;const n=Number(s);return isFinite(n)?n:null};
+const clean=v=>String(v??'').trim();
+
+function parseDay(text){
+  const R=parseTSV(text);
+  const find=label=>R.findIndex(r=>clean(r[0])===label);
+  const hi=find('類型');
+  if(hi<0)throw new Error('找不到「類型」那一列。請在每日頁按 Ctrl+A 全選後再複製。');
+  const H=R[hi].map(clean);
+  const col=name=>H.findIndex(h=>h.startsWith(name));
+  const C={type:col('類型'),name:col('地點'),eta:col('預計抵達'),shang:col('上河時間'),cost:col('花費時間'),km:col('距離'),up:col('爬升'),down:col('下降'),
+    alt:col('海拔'),water:col('水源'),comm:col('通訊點'),camp:col('營地'),retreat:col('撤退點'),note:col('備註')};
+  if(C.name<0||C.eta<0)throw new Error('欄位對不上：找不到「地點」或「預計抵達」。');
+  const meta={day:null,date:'',sunrise:'',sunset:'',route:'',notes:'',sum:{}};
+  const mi=find('天數');
+  if(mi>=0){const r=R[mi].map(clean);const at=l=>{const k=r.indexOf(l);return k>=0?r[k+1]||'':''};
+    meta.day=num(at('天數'));meta.date=at('日期');meta.sunrise=at('日出');meta.sunset=at('日落')}
+  const ri=find('路線');
+  if(ri>=0)meta.route=R[ri].slice(1).map(clean).find(Boolean)||'';
+  const si=find('行走');
+  if(si>=0&&si<hi&&R[si+1]){const k=R[si].map(clean),v=R[si+1].map(clean);k.forEach((name,j)=>{if(name)meta.sum[name]=v[j]||''})}
+  const ni=find('備註');
+  if(ni>hi)meta.notes=R[ni].slice(1).map(c=>String(c??'')).find(s=>s.trim())||'';
+  const rows=[];
+  for(let i=hi+1;i<R.length;i++){
+    const r=R[i];if(i===ni)break;
+    const name=clean(r[C.name]);if(!name)continue;
+    const g=k=>C[k]>=0?clean(r[C[k]]):'';
+    rows.push({type:g('type')||'行走',name,eta:g('eta'),shang:g('shang'),cost:g('cost'),km:g('km'),up:g('up'),down:g('down'),alt:g('alt'),
+      note:g('note'),flags:[['water','水源'],['camp','營地'],['comm','通訊點'],['retreat','撤退點']].filter(([k])=>g(k).toUpperCase()==='TRUE').map(f=>f[1])});
+  }
+  if(!rows.length)throw new Error('沒有讀到任何地點。這一天的表格是空的嗎？');
+  if(meta.day==null)meta.day=days.size?Math.max(...days.keys())+1:1;
+  return {meta,rows};
+}
+
+/* ---------- display helpers ---------- */
+const hm=s=>{s=clean(s);return /^0\d:\d\d$/.test(s)?s.slice(1):s};
+function shortDate(s){ // 2024/2/12 (週一) -> 2/12(一)
+  const m=String(s).match(/(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})\s*\(?\s*(?:週|星期)?([日一二三四五六])?/);
+  return m?`${+m[2]}/${+m[3]}${m[4]?'('+m[4]+')':''}`:clean(s);
+}
+const dash=v=>{const n=num(v);return n==null||n===0?'':String(n)};
+const fmtInt=v=>{const n=num(v);return n==null?'':Math.round(n).toLocaleString('en-US')};
+
+function sheetHTML(d){
+  const {meta,rows}=d, showNote=opts.note&&rows.some(r=>r.note);
+  const cols=[['抵達時間',76],['花費時間',74],['爬升',56],['下降',56],['公里數',58],['海拔',58],['地點',showNote?190:250],['上河時間',74]];
+  if(showNote)cols.push(['備註',250]);
+  const W=cols.reduce((a,c)=>a+c[1],0), N=cols.length;
+  let title=`D${meta.day}${meta.date?' '+shortDate(meta.date):''}`;
+  if(meta.sunrise||meta.sunset)title+=` 日出:${hm(meta.sunrise)||'—'}; 日落:${hm(meta.sunset)||'—'}`;
+  let h=`<table style="width:${W}px"><colgroup>${cols.map(c=>`<col style="width:${c[1]}px">`).join('')}</colgroup>`;
+  h+=`<tr>${cols.map(c=>`<th>${c[0]}</th>`).join('')}</tr>`;
+  h+=`<tr class="title"><td colspan="${N}">${esc(title)}</td></tr>`;
+  if(meta.route)h+=`<tr class="route"><td colspan="${N}">${esc(meta.route)}</td></tr>`;
+  rows.forEach((r,i)=>{
+    const ev=r.type!=='行走', cost=num(r.cost);
+    const showEta=i===0||cost>0||!ev;
+    const tags=opts.tags&&r.flags.length?`<span class="tags">（${r.flags.join('・')}）</span>`:'';
+    h+=`<tr class="${ev?'ev':''}"><td class="t">${showEta?esc(hm(r.eta)):''}</td><td class="c">${cost?cost:''}</td>`+
+       `<td>${dash(r.up)}</td><td>${dash(r.down)}</td><td>${dash(r.km)}</td><td>${dash(r.alt)}</td>`+
+       `<td class="n">${esc(r.name)}${tags}</td><td>${dash(r.shang)}</td>${showNote?`<td class="note">${esc(r.note)}</td>`:''}</tr>`;
+  });
+  const S=meta.sum, walkMin=(()=>{const m=String(S['行走']||'').match(/^(\d+):(\d\d)$/);return m?(+m[1])*60+(+m[2]):null})();
+  const items=[];
+  if(S['行走'])items.push(['行走時間(不含休息)',walkMin!=null?`${S['行走']}（${walkMin} 分）`:S['行走']]);
+  if(S['休息'])items.push(['休息時間',S['休息']]);
+  if(num(S['爬升 (m)']))items.push(['總爬升',fmtInt(S['爬升 (m)'])+' m']);
+  if(num(S['下降 (m)']))items.push(['總下降',fmtInt(S['下降 (m)'])+' m']);
+  if(num(S['距離 (km)']))items.push(['總距離',num(S['距離 (km)']).toFixed(1).replace(/\.0$/,'')+' km']);
+  const late=num(S['日落前餘裕 (分)']);
+  if(late!=null&&meta.sunset)items.push(['日落前餘裕',`<span class="${late<30?'warnv':''}">${late} 分</span>`,true]);
+  if(opts.food){
+    if(num(S['行動糧 (kcal)']))items.push(['行動糧',`${fmtInt(S['行動糧 (kcal)'])} kcal${num(S['行動糧重 (g)'])?'／約 '+fmtInt(S['行動糧重 (g)'])+' g':''}`]);
+    if(num(S['碳水目標 (g)']))items.push(['碳水目標',fmtInt(S['碳水目標 (g)'])+' g']);
+    if(num(S['需水 (ml)']))items.push(['需水',fmtInt(S['需水 (ml)'])+' ml']);
+  }
+  items.forEach(([k,v,raw])=>{h+=`<tr class="sum"><td class="k" colspan="2">${k}</td><td class="v" colspan="2">${raw?v:esc(v)}</td><td class="blank" colspan="${N-4}"></td></tr>`});
+  let notes=meta.notes.trim();
+  if(!notes){
+    const by=f=>[...new Set(rows.filter(r=>r.flags.includes(f)).map(r=>r.name))];
+    const L=[];[['營地',by('營地')],['水源',by('水源')],['通訊點',by('通訊點')],['撤退點',by('撤退點')]].forEach(([k,v])=>{if(v.length)L.push(`★${k}：${v.join('、')}`)});
+    notes=L.join('\n');
+  }
+  if(notes)h+=`<tr class="notes"><td colspan="${N}">${esc(notes)}</td></tr>`;
+  return h+'</table>';
+}
+
+/* ---------- page ---------- */
+function render(){
+  const box=$('#days');
+  if(!days.size){box.innerHTML='<p class="empty">還沒有資料。照上面三個步驟貼上一天的行程。</p>';return}
+  box.innerHTML=[...days.keys()].sort((a,b)=>a-b).map(k=>{const d=days.get(k);
+    return `<section class="card" data-day="${k}"><div class="card-h"><strong>D${k}${d.meta.date?'　'+esc(shortDate(d.meta.date)):''}</strong>
+      <button class="pri" data-act="copy">複製圖片</button><button data-act="png">下載 PNG</button><button data-act="del">移除</button></div>
+      <div class="scroll"><div class="sheet" id="sheet-${k}">${sheetHTML(d)}</div></div></section>`}).join('');
+}
+function say(t,err){const m=$('#msg');m.textContent=t;m.className='msg'+(err?' err':'')}
+
+async function toBlob(k){
+  if(document.fonts&&document.fonts.ready)await document.fonts.ready;
+  // render a copy outside the scroll box so wide tables are never clipped
+  const holder=document.createElement('div');
+  holder.style.cssText='position:fixed;left:-10000px;top:0;background:#fff';
+  const el=document.getElementById('sheet-'+k).cloneNode(true);el.removeAttribute('id');
+  holder.appendChild(el);document.body.appendChild(holder);
+  try{
+    const canvas=await html2canvas(el,{scale:2,backgroundColor:'#ffffff',logging:false});
+    return await new Promise(res=>canvas.toBlob(res,'image/png'));
+  }finally{holder.remove()}
+}
+async function copyImg(k,btn){
+  const old=btn.textContent;btn.textContent='產生中…';
+  try{
+    if(!navigator.clipboard||!window.ClipboardItem)throw new Error('nosupport');
+    await navigator.clipboard.write([new ClipboardItem({'image/png':toBlob(k)})]);
+    say(`D${k} 已複製，到 Word 按 Ctrl+V 貼上。`);
+  }catch(e){say('這個瀏覽器不能直接複製圖片，請改按「下載 PNG」，再到 Word 插入圖片。',true)}
+  btn.textContent=old;
+}
+async function downloadPng(k){
+  const blob=await toBlob(k),a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download=`行程_D${k}.png`;document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);
+  say(`已下載 行程_D${k}.png`);
+}
+
+function ingest(text){
+  if(!text||!text.trim())return;
+  try{const d=parseDay(text);const k=d.meta.day;const had=days.has(k);days.set(k,d);render();
+    say(`${had?'已更新':'已加入'} D${k}（${d.rows.length} 個地點）。可以接著貼下一天。`)}
+  catch(e){say(e.message,true)}
+}
+$('#drop').addEventListener('paste',e=>{
+  const t=e.clipboardData&&e.clipboardData.getData('text/plain');
+  if(t){e.preventDefault();ingest(t);$('#drop').value=''}
+});
+$('#drop').addEventListener('input',e=>{const t=e.target.value;if(t.includes('\t')){ingest(t);e.target.value=''}});
+$('#days').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-act]');if(!b)return;
+  const k=+b.closest('.card').dataset.day;
+  if(b.dataset.act==='copy')copyImg(k,b);
+  if(b.dataset.act==='png')downloadPng(k);
+  if(b.dataset.act==='del'){days.delete(k);render();say(`已移除 D${k}`)}
+});
+$('#btn-clear').addEventListener('click',()=>{days.clear();render();say('已清除')});
+[['opt-note','note'],['opt-tags','tags'],['opt-food','food']].forEach(([id,k])=>$('#'+id).addEventListener('change',e=>{opts[k]=e.target.checked;render()}));
+
+window.__itin={ingest,parseDay,toBlob,days};
+})();
+</script>
+</body>
+</html>
