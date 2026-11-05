@@ -6,10 +6,10 @@
  *
  * 安裝：擴充功能 → Apps Script → 貼上本檔 → 儲存 → 重新整理試算表
  *       → 上方選單「計劃書」→「產生計劃書」→ 第一次會要求授權。
- * 版本：1.1.0（加入停留／出發時間、地形估算）
+ * 版本：1.2.0（公裝分工：自己帶／幫別人背／交給別人背）
  */
 
-var PLAN_VERSION = '1.1.0';
+var PLAN_VERSION = '1.2.0';
 
 var COLOR = {
   label: '#F2DCDB',   // 主表左欄粉紅底
@@ -189,14 +189,15 @@ function readGear(ss) {
   if (!sh) return null;
   var v = sh.getDataRange().getDisplayValues();
   if (!v.length) return null;
-  var head = v[0];
-  var cols = [];
+  var head = v[0].map(trim);
+  var provCol = -1, noteCol = -1, cols = [];
   for (var c = 3; c < head.length; c++) {
-    var h = trim(head[c]);
-    if (!h || h === '備註' || /先填成員/.test(h)) continue;
+    var h = head[c];
+    if (/^提供/.test(h)) { provCol = c; continue; }
+    if (h === '備註') { noteCol = c; continue; }
+    if (!h || /先填成員/.test(h)) continue;
     cols.push({ c: c, name: h });
   }
-  var noteCol = head.indexOf('備註');
   var items = [], totals = null;
   for (var r = 1; r < v.length; r++) {
     var a = trim(v[r][0]);
@@ -204,11 +205,36 @@ function readGear(ss) {
     if (/^每人背負/.test(a)) { totals = cols.map(function (x) { return trim(v[r][x.c]); }); continue; }
     items.push({
       name: a, qty: trim(v[r][1]), unit: trim(v[r][2]),
+      provider: provCol >= 0 ? trim(v[r][provCol]) : '',
       by: cols.map(function (x) { return trim(v[r][x.c]); }),
       note: noteCol >= 0 ? trim(v[r][noteCol]) : ''
     });
   }
-  return { people: cols.map(function (x) { return x.name; }), items: items, totals: totals };
+  return { people: cols.map(function (x) { return x.name; }), items: items, totals: totals,
+           hasProvider: provCol >= 0 && items.some(function (it) { return it.provider; }) };
+}
+
+/** 每個人：自己帶、幫別人背（附提供者）、自己提供交給別人背、背負重量 */
+function gearDuty(g) {
+  function provides(it, p) { return it.provider && it.provider.indexOf(p) >= 0; }
+  function multi(it) { return /[、,，]/.test(it.provider); }
+  return g.people.map(function (p, pi) {
+    var own = [], help = [], give = [];
+    g.items.forEach(function (it) {
+      if (provides(it, p)) own.push(it.name + (+it.qty > 1 && !multi(it) ? '×' + it.qty : ''));
+      var w = +it.by[pi];
+      if (it.by[pi] && !provides(it, p)) {
+        var n = +it.unit > 0 && w > 0 ? Math.round(w / +it.unit) : 1;
+        help.push(it.name + (n > 1 ? '×' + n : '') + (it.provider ? '（' + it.provider + '）' : ''));
+      }
+      if (provides(it, p)) {
+        var who = [];
+        g.people.forEach(function (q, qi) { if (q !== p && it.by[qi] && !provides(it, q)) who.push(q); });
+        if (who.length) give.push(it.name + ' → ' + who.join('、'));
+      }
+    });
+    return [p, own.join('、'), help.join('、'), give.join('\n'), g.totals ? g.totals[pi] : ''];
+  });
 }
 
 function readOverviewPoints(ss) {
@@ -527,9 +553,15 @@ function buildMainTable(body, data) {
   add('帳篷床位分配', kv['帳篷床位分配']);
 
   if (data.gear && data.gear.items.length) {
-    var gearIntro = lines([kv['公裝補充說明'], '下表是公裝分配，讓大家知道自己要背的公裝重量，不是每個人要攜帶的東西。']);
-    add('公裝', gearIntro, function (cell) {
-      var g = data.gear;
+    var g = data.gear;
+    if (g.hasProvider) {
+      add('公裝分工', '自己帶＝從家裡帶來的公裝；幫別人背＝括號內的人提供、你負責背；交給別人背＝你提供、由箭頭後的人背。', function (cell) {
+        var t = [['姓名', '自己帶', '幫別人背（提供者）', '交給別人背', '重量 (g)']].concat(gearDuty(g));
+        nestTable(cell, t, [40, 108, 120, VW - 6 - 40 - 108 - 120 - 36, 36], 7.5);
+      });
+    }
+    var gearIntro = lines([kv['公裝補充說明'], '下表是背負重量分配，讓大家知道自己要背的公裝重量。']);
+    add('公裝重量', gearIntro, function (cell) {
       var head = ['公裝', '數目', '單重 (g)'].concat(g.people);
       var t = [head];
       g.items.forEach(function (it) {
