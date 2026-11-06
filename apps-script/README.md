@@ -30,3 +30,25 @@
 - Google 文件與 .docx 都存在試算表所在的資料夾，檔名加上產生時間，不會覆蓋舊檔
 - A4 直式；主表＋附件一 裝備檢查表＋附件二 每日行程＋附件三 座標
 - 頁尾有隱私提醒（內容取自「固定內容」）
+
+## 用 Claude Code／電腦更新腳本（clasp）
+
+改好 `計劃書.gs` 後，不用再開 Apps Script 編輯器貼上，一個指令推到所有試算表。
+
+### 第一次設定
+1. 安裝 Node.js（18 以上），然後：`npm install -g @google/clasp`
+2. 打開 https://script.google.com/home/usersettings ，把「Google Apps Script API」切到「開啟」
+3. `clasp login`，瀏覽器跳出來用自己的 Google 帳號登入、允許
+
+### 之後每次
+```bash
+./apps-script/push-all.sh
+```
+會依序推到 `.clasp-template.json`（空白範本）和 `.clasp-gpx-demo.json`（嘉明湖 GPX 匯入版）。推完到試算表重新整理，選單「計劃書 → 產生計劃書」測試。
+
+- 推送會**整個取代**遠端專案的檔案：遠端只會剩 `計劃書.gs` 和 `appsscript.json`。直接在線上編輯器改的內容會被蓋掉，要改請改 repo 裡的檔案。
+- 新增一份要同步的試算表：在那份試算表打開「擴充功能 → Apps Script」，從網址複製專案 ID（`/projects/<ID>/edit`），新增一個 `.clasp-<名稱>.json`：
+  ```json
+  { "scriptId": "<ID>", "rootDir": "." }
+  ```
+- 從空白範本「建立副本」出來的試算表，腳本已經跟著複製，不需要另外推；除非之後腳本有更新，再把那份加進來推。
