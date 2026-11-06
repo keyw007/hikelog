@@ -1,6 +1,6 @@
 # 登山行程紀錄（PWA 原型）
 
-> 整個工具組（App、行程圖產生器、計劃書腳本、試算表）的說明請看 [docs/總覽.md](docs/總覽.md)；用 Claude Code 開發請看 [CLAUDE.md](CLAUDE.md)。
+> 行程圖產生器、計劃書腳本、試算表已搬到 [keyw007/hike-planner](https://github.com/keyw007/hike-planner)，整個工具組的說明在 [總覽](https://github.com/keyw007/hike-planner/blob/main/docs/總覽.md)。用 Claude Code 開發請看 [CLAUDE.md](CLAUDE.md)。
 
 離線可用的登山時間紀錄 App。資料存在手機本機，山區無網路照常記錄。
 
